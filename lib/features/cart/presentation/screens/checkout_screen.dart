@@ -1,0 +1,180 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../../../../core/constants/app_routes.dart';
+import 'package:yuna/core/widgets/app_button.dart';
+import 'package:yuna/core/utils/snackbar_utils.dart';
+import '../providers/cart_provider.dart';
+import '../widgets/order_summary_widget.dart';
+
+class CheckoutScreen extends ConsumerStatefulWidget {
+  const CheckoutScreen({super.key});
+
+  static const routeName = '/checkout';
+
+  @override
+  ConsumerState<CheckoutScreen> createState() => _CheckoutScreenState();
+}
+
+class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  @override
+  Widget build(BuildContext context) {
+    final cartState = ref.watch(cartProvider);
+    final theme = Theme.of(context);
+
+    // Listen to order success and errors
+    ref.listen<CartState>(cartProvider, (previous, next) {
+      if (next.lastOrder != null && previous?.lastOrder != next.lastOrder) {
+        _showOrderSuccessDialog(context, next.lastOrder!.id);
+      }
+      if (next.error != null && next.error != previous?.error) {
+        AppSnackBar.showError(context, next.error!);
+        // Clear error after showing
+        Future.microtask(() => ref.read(cartProvider.notifier).clearError());
+      }
+    });
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Enrollment',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
+      ),
+      body: cartState.items.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 80,
+                    color: theme.disabledColor,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Cart is Empty',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.disabledColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Order Summary
+                  OrderSummaryWidget(
+                    items: cartState.items,
+                    totalPrice: cartState.totalPrice,
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  AppButton(
+                    text: 'Confirm Enrollment - ${AppStrings.formatPrice(cartState.totalPrice)}',
+                    isLoading: cartState.isLoading,
+                    onPressed: () {
+                      ref.read(cartProvider.notifier).createOrder();
+                    },
+                    icon: Icons.check_circle_outline,
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+
+  void _showOrderSuccessDialog(BuildContext context, int orderId) {
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 16),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFF22C55E).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Color(0xFF22C55E),
+                size: 40,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Enrollment Successful!',
+              style: GoogleFonts.outfit(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Thank you for your purchase.\nPlease upload your payment proof to complete the process.',
+              style: GoogleFonts.outfit(
+                fontSize: 16,
+                color: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            AppButton(
+              text: 'View Enrollment Details',
+              onPressed: () {
+                context.goNamed(
+                  AppRoutes.orderDetailsName,
+                  pathParameters: {'id': orderId.toString()},
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () {
+                context.goNamed(AppRoutes.homeName);
+              },
+              child: Text(
+                'Browse More Courses',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.color?.withOpacity(0.6),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "73851601023",
+    "project_id": "yuna-app-f61a0",
+    "storage_bucket": "yuna-app-f61a0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:73851601023:android:124a52715078c5365c3f4a",
+        "android_client_info": {
+          "package_name": "com.example.yuna"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuu_JNjpnvpQfJPmpO9JzgWCpVkUfD558"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

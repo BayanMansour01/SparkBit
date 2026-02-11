@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Google Sign In Client ID -->
+    <!-- Replace with your actual Android OAuth 2.0 client ID from Google Cloud Console -->
+    <!-- For testing, you can use the Web Client ID: 764578754226-8p4hhikbh16648m5eog7e9qu84dq9nfl.apps.googleusercontent.com -->
+    <string name="default_web_client_id">1043932528193-1036b19s1c09jcr2kqh2mcskabjekpo9.apps.googleusercontent.com</string>
+</resources>

@@ -1,0 +1,108 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/models/user_profile.dart';
+import '../../../courses/data/models/category_model.dart';
+import '../../../courses/data/models/course_model.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../courses/presentation/providers/courses_provider.dart';
+import '../../../../core/network/models/paginated_data.dart';
+import '../../../../core/network/models/pagination_model.dart';
+import '../../../../core/services/logger_service.dart';
+
+class HomeData {
+  final UserProfile userProfile;
+  final List<CourseModel> popularCourses;
+  final List<CategoryModel> categories;
+  final List<CourseModel> myCourses;
+  final DateTime loadedAt;
+
+  HomeData({
+    required this.userProfile,
+    required this.popularCourses,
+    required this.categories,
+    required this.myCourses,
+    DateTime? loadedAt,
+  }) : loadedAt = loadedAt ?? DateTime.now();
+
+  // Check if data is still fresh (less than 5 minutes old)
+  bool get isFresh {
+    final now = DateTime.now();
+    return now.difference(loadedAt).inMinutes < 5;
+  }
+}
+
+/// Cached home data provider with smart refresh
+/// This provider will NOT reload data every time you navigate back to home
+/// It will only refresh if:
+/// 1. Data is older than 5 minutes
+/// 2. Explicitly invalidated
+/// 3. App is restarted
+final homeDataProvider = FutureProvider<HomeData>((ref) async {
+  // Get user profile first to determine current user state
+  // This must be watched first so that if userProfile changes, this provider rebuilds
+  final userProfile = await ref.watch(userProfileProvider.future);
+  final isGuest = userProfile.id == -1;
+
+  // Check if we have cached data AND if it belongs to the same user
+  final cachedData = ref.state.value;
+
+  // Only return cached data if:
+  // 1. It exists
+  // 2. It is fresh (< 5 mins)
+  // 3. The user ID matches the current user (handles logout logic)
+  if (cachedData != null &&
+      cachedData.isFresh &&
+      cachedData.userProfile.id == userProfile.id) {
+    return cachedData;
+  }
+
+  // Execute requests in parallel
+  // Skip my-courses for guests
+  final futures = <Future>[
+    Future.value(userProfile), // Already fetched
+    ref.watch(coursesProvider.future),
+    ref.watch(categoriesProvider.future),
+    if (!isGuest)
+      ref.watch(myCoursesProvider.future).catchError((e) {
+        LoggerService.logToFile('Failed to fetch my courses in Home: $e');
+        return PaginatedData<CourseModel>(
+          data: <CourseModel>[],
+          pagination: const PaginationModel(
+            total: 0,
+            perPage: 0,
+            currentPage: 1,
+            lastPage: 1,
+            from: 0,
+            to: 0,
+          ),
+        );
+      }),
+  ];
+
+  final results = await Future.wait(futures);
+
+  return HomeData(
+    userProfile: results[0] as UserProfile,
+    popularCourses: (results[1] as PaginatedData<CourseModel>).data,
+    categories: (results[2] as PaginatedData<CategoryModel>).data,
+    myCourses: isGuest
+        ? [] // Empty list for guests
+        : (results[3] as PaginatedData<CourseModel>).data,
+    loadedAt: DateTime.now(),
+  );
+});
+
+/// Provider to check if home data needs refresh
+final shouldRefreshHomeProvider = Provider<bool>((ref) {
+  final homeData = ref.watch(homeDataProvider).value;
+  return homeData == null || !homeData.isFresh;
+});
+
+/// Manual refresh function
+/// Call this when user explicitly pulls to refresh
+void refreshHomeData(WidgetRef ref) {
+  ref.invalidate(homeDataProvider);
+  ref.invalidate(userProfileProvider);
+  ref.invalidate(coursesProvider);
+  ref.invalidate(categoriesProvider);
+  ref.invalidate(myCoursesProvider);
+}
