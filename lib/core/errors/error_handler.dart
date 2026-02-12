@@ -8,7 +8,7 @@ class ErrorHandler {
     } else if (error is FormatException) {
       return const ValidationFailure("Data format error");
     } else if (error is Failure) {
-        return error;
+      return error;
     } else {
       return UnexpectedFailure(error.toString());
     }
@@ -33,16 +33,25 @@ class ErrorHandler {
 
   static Failure _handleBadResponse(Response? response) {
     if (response == null) return const ServerFailure("Unknown Protocol Error");
-    
+
     // Try parsing backend message
     try {
       if (response.data is Map<String, dynamic>) {
-          final message = response.data['message'] ?? response.statusMessage ?? "Something went wrong";
-          return ServerFailure(message, code: response.statusCode);
+        final message =
+            response.data['message'] ??
+            response.statusMessage ??
+            "Something went wrong";
+        return ServerFailure(message, code: response.statusCode);
       }
-      return ServerFailure(response.statusMessage ?? "Server Error", code: response.statusCode);
+      return ServerFailure(
+        response.statusMessage ?? "Server Error",
+        code: response.statusCode,
+      );
     } catch (_) {
-      return ServerFailure("Server Error: ${response.statusCode}", code: response.statusCode);
+      return ServerFailure(
+        "Server Error: ${response.statusCode}",
+        code: response.statusCode,
+      );
     }
   }
 }

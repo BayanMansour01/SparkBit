@@ -11,15 +11,19 @@ class DeviceRegistrationGuide {
   /// يتم استدعاؤه في main() أو بعد تسجيل الدخول مباشرة
   static Future<void> registerOnAppStart(String fcmToken) async {
     final deviceService = getIt<DeviceService>();
-    
+
     try {
       // سيقوم بالمقارنة تلقائياً ويرسل فقط إذا تغيرت المعلومات
-      final wasRegistered = await deviceService.registerDeviceIfChanged(fcmToken: fcmToken);
-      
+      final wasRegistered = await deviceService.registerDeviceIfChanged(
+        fcmToken: fcmToken,
+      );
+
       if (wasRegistered) {
         debugPrint('✅ Device registered/updated successfully');
       } else {
-        debugPrint('ℹ️ Device info unchanged, skipped API call to save server resources');
+        debugPrint(
+          'ℹ️ Device info unchanged, skipped API call to save server resources',
+        );
       }
     } catch (e) {
       debugPrint('❌ Error registering device: $e');
@@ -31,7 +35,7 @@ class DeviceRegistrationGuide {
   /// يتم استدعاؤه عند استلام token جديد من Firebase
   static Future<void> registerOnTokenRefresh(String newFcmToken) async {
     final deviceService = getIt<DeviceService>();
-    
+
     try {
       // حتى لو الـ device info نفسه، إذا الـ token تغير سيرسل
       await deviceService.registerDeviceIfChanged(fcmToken: newFcmToken);
@@ -45,7 +49,7 @@ class DeviceRegistrationGuide {
   /// يتم استدعاؤه عند Logout
   static Future<void> clearOnLogout() async {
     final deviceService = getIt<DeviceService>();
-    
+
     try {
       await deviceService.clearDeviceInfo();
       debugPrint('✅ Device info cleared from local storage');
@@ -57,14 +61,11 @@ class DeviceRegistrationGuide {
   /// ✅ السيناريو 4: الحصول على معلومات الجهاز الحالية (للعرض فقط)
   static Future<Map<String, String>> getDeviceInfo() async {
     final deviceService = getIt<DeviceService>();
-    
+
     final deviceType = await deviceService.getDeviceType();
     final deviceInfo = await deviceService.getDeviceInfo();
-    
-    return {
-      'type': deviceType,
-      'info': deviceInfo,
-    };
+
+    return {'type': deviceType, 'info': deviceInfo};
   }
 }
 
@@ -77,7 +78,7 @@ class MainAppExample {
   Future<void> onAppStart() async {
     // بعد تسجيل الدخول بنجاح وحصولك على FCM token
     final fcmToken = 'your-fcm-token-from-firebase';
-    
+
     // سجل الجهاز (سيقارن تلقائياً ويرسل فقط إذا لزم الأمر)
     await DeviceRegistrationGuide.registerOnAppStart(fcmToken);
   }
@@ -97,10 +98,10 @@ class FirebaseMessagingExample {
 class LogoutExample {
   Future<void> logout() async {
     // منطق تسجيل الخروج...
-    
+
     // امسح معلومات الجهاز المحفوظة
     await DeviceRegistrationGuide.clearOnLogout();
-    
+
     // باقي كود الخروج...
   }
 }
@@ -119,11 +120,11 @@ class DeviceInfoScreen extends StatelessWidget {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: AppLoadingIndicator());
           }
-          
+
           if (snapshot.hasError) {
             return Center(child: Text('خطأ: ${snapshot.error}'));
           }
-          
+
           final deviceInfo = snapshot.data!;
           return Padding(
             padding: const EdgeInsets.all(AppPadding.p16),

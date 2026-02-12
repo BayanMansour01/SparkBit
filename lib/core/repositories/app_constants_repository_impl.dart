@@ -18,7 +18,9 @@ class AppConstantsRepositoryImpl implements AppConstantsRepository {
       if (response.code == 200 && response.data != null) {
         return Right(response.data!.data);
       } else {
-        return Left(ServerFailure(response.message ?? 'Failed to load constants'));
+        return Left(
+          ServerFailure(response.message ?? 'Failed to load constants'),
+        );
       }
     } on DioException catch (e) {
       return Left(ErrorHandler.handle(e));

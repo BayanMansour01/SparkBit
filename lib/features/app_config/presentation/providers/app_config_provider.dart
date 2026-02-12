@@ -17,10 +17,12 @@ final getAppConfigUseCaseProvider = Provider<GetAppConfigUseCase>((ref) {
 });
 
 /// Provider for app configuration
-final appConfigProvider = FutureProvider.autoDispose<AppConfigModel>((ref) async {
+final appConfigProvider = FutureProvider.autoDispose<AppConfigModel>((
+  ref,
+) async {
   // Keep alive to prevent re-fetching/re-building unnecessarily
   ref.keepAlive();
-  
+
   final useCase = ref.watch(getAppConfigUseCaseProvider);
   return await useCase();
 });

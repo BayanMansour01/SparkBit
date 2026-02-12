@@ -29,7 +29,11 @@ class CartItemCard extends StatelessWidget {
           color: theme.colorScheme.error.withOpacity(0.9),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 32),
+        child: const Icon(
+          Icons.delete_outline_rounded,
+          color: Colors.white,
+          size: 32,
+        ),
       ),
       onDismissed: (_) => onRemove(),
       child: Container(
@@ -59,14 +63,21 @@ class CartItemCard extends StatelessWidget {
                 height: 90,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.3,
+                  ),
                   child: const Center(
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
                 errorWidget: (context, url, error) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                  child: Icon(Icons.school_rounded, color: theme.colorScheme.onSurface.withOpacity(0.2)),
+                  color: theme.colorScheme.surfaceContainerHighest.withOpacity(
+                    0.3,
+                  ),
+                  child: Icon(
+                    Icons.school_rounded,
+                    color: theme.colorScheme.onSurface.withOpacity(0.2),
+                  ),
                 ),
               ),
             ),
@@ -78,8 +89,8 @@ class CartItemCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   // Category Tag (Optional, if available in model, otherwise skip)
-                   
+                  // Category Tag (Optional, if available in model, otherwise skip)
+
                   // Title
                   Text(
                     course.title,
@@ -97,7 +108,11 @@ class CartItemCard extends StatelessWidget {
                   // Instructor
                   Row(
                     children: [
-                      Icon(Icons.person_outline_rounded, size: 14, color: theme.colorScheme.secondary),
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 14,
+                        color: theme.colorScheme.secondary,
+                      ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
@@ -112,7 +127,7 @@ class CartItemCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 10),
 
                   // Price & Remove Button
@@ -133,7 +148,7 @@ class CartItemCard extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Delete Action (Subtle)
             IconButton(
               onPressed: onRemove,

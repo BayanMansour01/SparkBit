@@ -248,7 +248,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: AppColors.primary.withOpacity(
-                        (0.15 - (index * 0.05) * animationValue).clamp(0.0, 1.0),
+                        (0.15 - (index * 0.05) * animationValue).clamp(
+                          0.0,
+                          1.0,
+                        ),
                       ),
                       width: 1.5,
                     ),
@@ -315,7 +318,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     child: CircularProgressIndicator(
                                       value: progress.expectedTotalBytes != null
                                           ? progress.cumulativeBytesLoaded /
-                                              progress.expectedTotalBytes!
+                                                progress.expectedTotalBytes!
                                           : null,
                                       strokeWidth: 2,
                                     ),
@@ -534,9 +537,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       icon: Icons.save_rounded,
       onPressed: () async {
         final uniqueRef = ref.read(editProfileProvider.notifier);
-        final success = await uniqueRef.saveProfile(
-          _nameController.text,
-        );
+        final success = await uniqueRef.saveProfile(_nameController.text);
         if (success && context.mounted) {
           AppSnackBar.showSuccess(context, 'Profile updated successfully! 🎉');
           context.pop();

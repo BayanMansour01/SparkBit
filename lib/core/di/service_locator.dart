@@ -29,6 +29,8 @@ import '../../features/notifications/domain/repositories/notifications_repositor
 import '../../features/orders/data/datasources/order_remote_datasource.dart';
 import '../../features/orders/data/repositories/order_repository_impl.dart';
 import '../../features/orders/domain/repositories/order_repository.dart';
+import '../../features/contact_us/domain/repositories/contact_repository.dart';
+import '../../features/contact_us/data/repositories/contact_repository_impl.dart';
 import '../network/api/student_api.dart';
 import '../network/api/constants_api.dart';
 import '../network/dio_client.dart';
@@ -117,6 +119,9 @@ Future<void> setupServiceLocator() async {
   );
   getIt.registerLazySingleton<OrderRepository>(
     () => OrderRepositoryImpl(getIt<OrderRemoteDataSource>()),
+  );
+  getIt.registerLazySingleton<ContactRepository>(
+    () => ContactRepositoryImpl(getIt<StudentApi>()),
   );
 
   // UseCases

@@ -46,6 +46,15 @@ class SignInScreen extends ConsumerWidget {
     final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           SafeArea(
@@ -91,7 +100,8 @@ class SignInScreen extends ConsumerWidget {
                             .read(authControllerProvider.notifier)
                             .loginWithGoogle();
                       },
-                      icon: Icons.login_rounded, // Better to use a generic icon if Image.network is too complex for AppButton right now
+                      icon: Icons
+                          .login_rounded, // Better to use a generic icon if Image.network is too complex for AppButton right now
                     ),
                     const SizedBox(height: 16),
 

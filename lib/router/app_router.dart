@@ -21,6 +21,7 @@ import '../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
 import '../core/widgets/main_wrapper.dart'; // Added
+import '../features/cart/presentation/screens/checkout_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -162,6 +163,14 @@ class AppRouter {
         name: AppRoutes.notificationsName,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+
+      // Checkout
+      GoRoute(
+        path: AppRoutes.checkout,
+        name: AppRoutes.checkoutName,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const CheckoutScreen(),
       ),
 
       // My Orders - New

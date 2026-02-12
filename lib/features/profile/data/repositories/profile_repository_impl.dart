@@ -36,7 +36,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     // Mock Mode
     if (AppConfig.useMockData) {
       await MockData.simulateNetworkDelay();
-      return MockData.mockProfile.copyWith(name: name ?? MockData.mockProfile.name);
+      return MockData.mockProfile.copyWith(
+        name: name ?? MockData.mockProfile.name,
+      );
     }
 
     try {

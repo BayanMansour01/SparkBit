@@ -4,6 +4,7 @@ import '../../models/app_constants.dart';
 import '../api_endpoints.dart';
 import '../models/paginated_data.dart';
 import '../../../features/notifications/data/models/notification_model.dart';
+import '../../../features/contact_us/data/models/contact_method_model.dart';
 
 /// API service for student-related endpoints
 class StudentApi {
@@ -50,10 +51,7 @@ class StudentApi {
   }) async {
     final response = await dio.get(
       ApiEndpoints.notificationsGetAll,
-      queryParameters: {
-        'page': page,
-        'per_page': perPage,
-      },
+      queryParameters: {'page': page, 'per_page': perPage},
     );
     final responseData = response.data as Map<String, dynamic>;
     final data = responseData['data'] as Map<String, dynamic>;
@@ -70,5 +68,17 @@ class StudentApi {
     final data = responseData['data'] as Map<String, dynamic>;
     final innerData = data['data'] as Map<String, dynamic>;
     return innerData['unread_count'] as int;
+  }
+
+  /// Get contact methods
+  Future<List<ContactMethodModel>> getContactMethods() async {
+    final response = await dio.get(ApiEndpoints.contactUsGetAll);
+    final responseData = response.data as Map<String, dynamic>;
+    final data = responseData['data'] as List<dynamic>;
+    return data
+        .map(
+          (json) => ContactMethodModel.fromJson(json as Map<String, dynamic>),
+        )
+        .toList();
   }
 }

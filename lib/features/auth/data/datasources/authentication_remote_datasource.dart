@@ -7,7 +7,8 @@ abstract class AuthenticationRemoteDataSource {
   Future<void> logout();
 }
 
-class AuthenticationRemoteDataSourceImpl implements AuthenticationRemoteDataSource {
+class AuthenticationRemoteDataSourceImpl
+    implements AuthenticationRemoteDataSource {
   final Dio dio;
 
   AuthenticationRemoteDataSourceImpl(this.dio);
@@ -18,7 +19,7 @@ class AuthenticationRemoteDataSourceImpl implements AuthenticationRemoteDataSour
       ApiEndpoints.googleLogin,
       data: {'access_token': accessToken},
     );
-    
+
     // Manual parsing since we are not using Retrofit here for simplicity or
     // because existing pattern uses manual parsing in some places.
     // Structure: BaseResponse<DataWrapper<AuthenticationResponse>>

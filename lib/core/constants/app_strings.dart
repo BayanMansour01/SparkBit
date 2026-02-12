@@ -1,3 +1,5 @@
+import 'package:yuna/core/network/api_endpoints.dart';
+
 /// App strings constants
 class AppStrings {
   AppStrings._();
@@ -7,26 +9,26 @@ class AppStrings {
   static const String appTagline = 'Learn Anytime, Anywhere';
 
   // Currency
-  static const String currencyCode = '\$  ';
-  static const String currencySymbol = 'USD';  
-  
+  static const String currencyCode = 'SYP ';
+  static const String currencySymbol = 'SYP';
+
   /// Format price with currency
   /// Accepts [price] as String, int, or double
   static String formatPrice(dynamic price) {
     if (price == null) return '$currencyCode 0.00    ';
-    
+
     double value = 0.0;
     if (price is String) {
       value = double.tryParse(price) ?? 0.0;
     } else if (price is num) {
-      value = price.toDouble();    
+      value = price.toDouble();
     }
-    
+
     // Check if integer (no decimals)
     if (value % 1 == 0) {
-      return '$currencyCode ${value.toInt(    )}';
+      return '$currencyCode ${value.toInt()}';
     }
-    
+
     return '$currencyCode ${value.toStringAsFixed(2)}';
   }
 
@@ -35,17 +37,20 @@ class AppStrings {
   static const String signUp = 'Sign Up';
   static const String signOut = 'Sign Out';
   static const String signInRequired = 'Sign In Required';
-  static const String signdToCart = 'Please sign in to add courses to your cart and make purchases.';
+  static const String signdToCart =
+      'Please sign in to add courses to your cart and make purchases.';
 
   // Cart
   static const String cart = 'Shopping Cart';
   static const String addToCart = 'Add to Cart';
   static const String viewCart = 'View Cart';
   static const String emptyCart = 'Cart is Empty';
-  static const String emptyCarte = 'Start adding courses you love to your cart.';
+  static const String emptyCarte =
+      'Start adding courses you love to your cart.';
   static const String courseAddedToCart = 'Course added to cart';
   static const String clearCart = 'Clear Cart';
-  static const String clearCartConfirm = 'Are you sure you want to clear the cart?';
+  static const String clearCartConfirm =
+      'Are you sure you want to clear the cart?';
   static const String proceedToCheckout = 'Proceed to Checkout';
 
   // Checkout
@@ -74,6 +79,12 @@ class AppStrings {
   static const String view = 'View';
   static const String backToHome = 'Back to Home';
   static const String browseCourses = 'Browse Courses';
+  static const String exitApp = 'Exit App';
+  static const String exitAppMessage =
+      'Are you sure you want to exit the application?';
+  static const String exit = 'Exit';
   static const String total = 'Total';
   static const String subtotal = 'Subtotal';
+  static const String privacyPolicyUrl =
+      '${ApiEndpoints.baseURl}/privacy-policy';
 }

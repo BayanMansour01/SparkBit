@@ -40,15 +40,15 @@ class LessonViewerScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                     LessonVideoPlayer(lesson: lesson),
-                     LessonContent(lesson: lesson),
-                  ]
-                )
-              )
-            )
+                    LessonVideoPlayer(lesson: lesson),
+                    LessonContent(lesson: lesson),
+                  ],
+                ),
+              ),
+            ),
           ),
         );
-      }
+      },
     );
   }
 }

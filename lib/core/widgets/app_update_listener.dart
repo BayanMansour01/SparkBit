@@ -24,7 +24,7 @@ class AppUpdateListener extends ConsumerWidget {
 
   void _showUpdateDialog(BuildContext context, WidgetRef ref) async {
     final config = await ref.read(appConfigProvider.future);
-    
+
     if (!context.mounted) return;
 
     showDialog(
@@ -32,7 +32,10 @@ class AppUpdateListener extends ConsumerWidget {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Update Required'),
-        content: Text(config.updateMessage ?? 'A new version of the app is available. Please update to continue.'),
+        content: Text(
+          config.updateMessage ??
+              'A new version of the app is available. Please update to continue.',
+        ),
         actions: [
           TextButton(
             onPressed: () async {

@@ -34,10 +34,7 @@ class PaymentMethodSelector extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.payment_outlined,
-                  color: theme.colorScheme.primary,
-                ),
+                Icon(Icons.payment_outlined, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
                   'Payment Method',
@@ -60,7 +57,7 @@ class PaymentMethodSelector extends StatelessWidget {
             subtitle: 'Visa, MasterCard, or American Express',
             icon: Icons.credit_card,
           ),
-          
+
           _PaymentMethodTile(
             value: 'wallet',
             groupValue: selectedMethod,
@@ -115,10 +112,7 @@ class _PaymentMethodTile extends StatelessWidget {
               ? theme.colorScheme.primaryContainer.withOpacity(0.3)
               : Colors.transparent,
           border: Border(
-            bottom: BorderSide(
-              color: theme.dividerColor,
-              width: 0.5,
-            ),
+            bottom: BorderSide(color: theme.dividerColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -151,8 +145,9 @@ class _PaymentMethodTile extends StatelessWidget {
                   Text(
                     title,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),

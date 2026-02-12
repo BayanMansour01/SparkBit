@@ -14,6 +14,5 @@ abstract class PaginatedData<T> with _$PaginatedData<T> {
   factory PaginatedData.fromJson(
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
-  ) =>
-      _$PaginatedDataFromJson(json, fromJsonT);
+  ) => _$PaginatedDataFromJson(json, fromJsonT);
 }

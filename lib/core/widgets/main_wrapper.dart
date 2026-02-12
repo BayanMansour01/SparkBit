@@ -1,39 +1,295 @@
 import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../constants/app_strings.dart';
+import '../constants/app_routes.dart';
 import '../resources/values_manager.dart';
 import 'app_update_listener.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
+import '../../features/notifications/presentation/providers/notifications_provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import '../utils/snackbar_utils.dart';
 
-class MainWrapper extends ConsumerWidget {
+class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainWrapper({super.key, required this.navigationShell});
 
+  @override
+  ConsumerState<MainWrapper> createState() => _MainWrapperState();
+}
+
+class _MainWrapperState extends ConsumerState<MainWrapper> {
+  static const platform = MethodChannel('com.example.yuna/back_button');
+
+  @override
+  void initState() {
+    super.initState();
+    _setupBackButtonHandler();
+    _setupNotificationListeners();
+  }
+
+  void _setupNotificationListeners() {
+    // Listen to foreground messages
+    FirebaseMessaging.onMessage.listen((message) {
+      debugPrint('🔔 Foreground Notification: ${message.notification?.title}');
+      if (mounted) {
+        // Invalidate the provider to refetch the unread count from server
+        ref.invalidate(unreadNotificationsCountProvider);
+
+        // Show interactive snackbar for real-time navigation
+        if (message.notification != null) {
+          AppSnackBar.showNotification(
+            context,
+            title: message.notification?.title ?? 'New Notification',
+            body: message.notification?.body ?? '',
+            onTap: () => _handleNotificationNavigation(message.data),
+          );
+        }
+      }
+    });
+
+    // Handle notification tap when app is in background but still running
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      debugPrint('🔔 Notification Tapped (Background): ${message.data}');
+      _handleNotificationNavigation(message.data);
+    });
+
+    // Check if app was opened from a terminated state via a notification
+    FirebaseMessaging.instance.getInitialMessage().then((message) {
+      if (message != null) {
+        debugPrint('🔔 Notification Tapped (Terminated): ${message.data}');
+        _handleNotificationNavigation(message.data);
+      }
+    });
+  }
+
+  void _handleNotificationNavigation(Map<String, dynamic> data) {
+    final type = data['notification_type'] ?? data['type'];
+    if (type == null) return;
+
+    switch (type) {
+      case 'order':
+      case 'purchase':
+        final orderId = data['order_id'] ?? data['id'];
+        if (orderId != null) {
+          context.pushNamed(
+            AppRoutes.orderDetailsName,
+            pathParameters: {'id': orderId.toString()},
+          );
+        }
+        break;
+      case 'course':
+        // Navigation to course details requires a full model currently
+        // This might need a separate route fetching logic later
+        break;
+      case 'notification':
+        context.push(AppRoutes.notifications);
+        break;
+    }
+  }
+
+  void _setupBackButtonHandler() {
+    platform.setMethodCallHandler((call) async {
+      debugPrint('🔙 Native back button pressed via MethodChannel!');
+
+      if (call.method == 'onBackPressed') {
+        // Show exit dialog
+        final shouldExit = await _handleBackPress();
+        debugPrint('🔙 Returning $shouldExit to native code');
+
+        // Return true to allow native back, false to prevent it
+        return shouldExit;
+      }
+
+      return false;
+    });
+  }
+
   void _onTap(BuildContext context, int index) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
+  Future<bool> _handleBackPress() async {
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
+    // If we have a screen pushed on top of the root navigator (like OrdersScreen),
+    // pop that screen and tell native code we handled it (return false).
+    if (rootNavigator.canPop()) {
+      debugPrint('🔙 Sub-page active, popping screen');
+      rootNavigator.pop();
+      return false; // Handled in Flutter
+    }
+
+    debugPrint('🔙 Root page active, showing exit dialog...');
+
+    // Always show exit dialog on back button at root
+    final shouldExit = await _showExitDialog(context);
+    debugPrint('🔙 User chose to exit: $shouldExit');
+
+    return shouldExit;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final profile = ref.watch(userProfileProvider).valueOrNull;
     final isGuest = profile?.id == -1;
 
     return AppUpdateListener(
-      child: Scaffold(
-        extendBody: true, // Allow body to extend behind the navbar
-        body: navigationShell,
-        bottomNavigationBar: _CustomBottomNavBar(
-          currentIndex: navigationShell.currentIndex,
-          onTap: (index) => _onTap(context, index),
-          isGuest: isGuest,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) async {
+          debugPrint('🔙 PopScope called (fallback) - didPop: $didPop');
+
+          if (didPop) {
+            debugPrint('🔙 Already handled');
+            return;
+          }
+
+          // Fallback: Handle back button press if MethodChannel didn't catch it
+          final shouldExit = await _handleBackPress();
+          if (shouldExit && context.mounted) {
+            SystemNavigator.pop();
+          }
+        },
+
+        child: Scaffold(
+          extendBody: true, // Allow body to extend behind the navbar
+          body: widget.navigationShell,
+          bottomNavigationBar: _CustomBottomNavBar(
+            currentIndex: widget.navigationShell.currentIndex,
+            onTap: (index) => _onTap(context, index),
+            isGuest: isGuest,
+          ),
         ),
       ),
     );
+  }
+
+  Future<bool> _showExitDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+            child: AlertDialog(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surface.withOpacity(0.9),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.r24),
+                side: BorderSide(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(
+                AppPadding.p24,
+                AppPadding.p32,
+                AppPadding.p24,
+                AppPadding.p16,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(AppPadding.p16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.error.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.logout_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                      size: AppSize.s32,
+                    ),
+                  ),
+                  const SizedBox(height: AppSize.s24),
+                  Text(
+                    AppStrings.exitApp,
+                    style: TextStyle(
+                      fontSize: AppSize.s20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: AppSize.s12),
+                  Text(
+                    AppStrings.exitAppMessage,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: AppSize.s32),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppPadding.p14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.r12,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            AppStrings.cancel,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withOpacity(0.6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSize.s12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppPadding.p14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.r12,
+                              ),
+                            ),
+                          ),
+                          child: const Text(
+                            AppStrings.exit,
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ) ??
+        false;
   }
 }
 

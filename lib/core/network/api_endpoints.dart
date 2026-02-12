@@ -3,6 +3,7 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
+  static const String baseURl = "http://10.218.111.95:8000";
   // Student Settings
   static const String studentSettings = '/student/settings/getAll';
 
@@ -54,4 +55,7 @@ class ApiEndpoints {
   static const String uploadPaymentProof =
       '/student/orders/{id}/upload-payment-proof';
   static const String cancelOrder = '/student/orders/{id}/cancel';
+
+  // Contact Us
+  static const String contactUsGetAll = '/student/contact-us/getAll';
 }

@@ -80,7 +80,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   const SizedBox(height: 32),
 
                   AppButton(
-                    text: 'Confirm Enrollment - ${AppStrings.formatPrice(cartState.totalPrice)}',
+                    text:
+                        'Confirm Enrollment - ${AppStrings.formatPrice(cartState.totalPrice)}',
                     isLoading: cartState.isLoading,
                     onPressed: () {
                       ref.read(cartProvider.notifier).createOrder();

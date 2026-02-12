@@ -5,9 +5,10 @@ import 'package:yuna/core/models/app_constants.dart';
 import 'package:yuna/core/models/constant_value.dart';
 import 'package:yuna/core/repositories/app_constants_repository.dart';
 
-final appConstantsProvider = AsyncNotifierProvider<AppConstantsNotifier, AppConstants?>(() {
-  return AppConstantsNotifier();
-});
+final appConstantsProvider =
+    AsyncNotifierProvider<AppConstantsNotifier, AppConstants?>(() {
+      return AppConstantsNotifier();
+    });
 
 class AppConstantsNotifier extends AsyncNotifier<AppConstants?> {
   @override
@@ -19,15 +20,12 @@ class AppConstantsNotifier extends AsyncNotifier<AppConstants?> {
     try {
       final repository = getIt<AppConstantsRepository>();
       final result = await repository.getAppConstants();
-      
-      return result.fold(
-        (failure) {
-          // Log error or handle gracefully
-          print('Error fetching constants: ${failure.message}');
-          return null; 
-        },
-        (data) => data,
-      );
+
+      return result.fold((failure) {
+        // Log error or handle gracefully
+        print('Error fetching constants: ${failure.message}');
+        return null;
+      }, (data) => data);
     } catch (e) {
       print('Exception fetching constants: $e');
       return null;

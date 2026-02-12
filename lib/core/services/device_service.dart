@@ -16,7 +16,18 @@ class DeviceService {
   static const String _keyDeviceInfo = 'last_device_info';
   static const String _keyFcmToken = 'last_fcm_token';
 
-  DeviceService(this._studentApi, this._prefs, this._firebaseMessagingService);
+  DeviceService(this._studentApi, this._prefs, this._firebaseMessagingService) {
+    _monitorTokenRefresh();
+  }
+
+  void _monitorTokenRefresh() {
+    _firebaseMessagingService.onTokenRefresh.listen((newToken) async {
+      final accessToken = _prefs.getString('access_token');
+      if (accessToken != null && accessToken.isNotEmpty) {
+        await registerDeviceIfChanged(fcmToken: newToken);
+      }
+    });
+  }
 
   /// Get current device type
   Future<String> getDeviceType() async {

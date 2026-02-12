@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:yuna/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/models/user_profile.dart';
@@ -17,7 +18,8 @@ import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/home_provider.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../../../core/widgets/app_profile_avatar.dart';
+import '../../../../core/widgets/main_screen_wrapper.dart';
 
 /// Home screen with premium UI and animations
 /// Refactored to Stateless ConsumerWidget
@@ -29,138 +31,96 @@ class HomeScreen extends ConsumerWidget {
     // Watch aggregated data provider
     final homeDataAsync = ref.watch(homeDataProvider);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Stack(
-        children: [
-          // Background Elements
-          const _BackgroundBlobs(),
+    return homeDataAsync.when(
+      data: (homeData) {
+        return MainScreenWrapper(
+          appBar: _buildAppBar(context, homeData.userProfile),
+          onRefresh: () async {
+            ref.invalidate(homeDataProvider);
+            ref.invalidate(userProfileProvider);
+            ref.invalidate(coursesProvider);
+            ref.invalidate(categoriesProvider);
+            ref.invalidate(myCoursesProvider);
+            await ref.read(homeDataProvider.future);
+          },
+          child: _FadeSlideContent(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSizes.space16),
+                _buildSearchBar(context),
 
-          // Main Content
-          homeDataAsync.when(
-            data: (homeData) {
-              // Show same content for all users (logged-in and guest)
-              return SafeArea(
-                bottom: false,
-                child: ResponsiveCenter(
-                  child: Column(
-                    children: [
-                      _buildAppBar(context, homeData.userProfile),
-                      Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: () async {
-                            // Refresh all data
-                            ref.invalidate(homeDataProvider);
-                            ref.invalidate(userProfileProvider);
-                            ref.invalidate(coursesProvider);
-                            ref.invalidate(categoriesProvider);
-                            ref.invalidate(myCoursesProvider);
-                            // Wait for new data
-                            await ref.read(homeDataProvider.future);
-                          },
-                          child: SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(
-                              parent: BouncingScrollPhysics(),
-                            ),
-                            padding: const EdgeInsets.only(
-                              bottom: AppSizes.space100,
-                            ),
-                            child: _FadeSlideContent(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: AppSizes.space16),
-                                  _buildSearchBar(context),
+                // Continue Learning Section (only for logged-in users with courses)
+                if (homeData.userProfile.id != -1 &&
+                    homeData.myCourses.isNotEmpty) ...[
+                  const SizedBox(height: AppSizes.space32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingLg,
+                    ),
+                    child: _buildSectionHeader(
+                      context,
+                      'Continue Learning',
+                      () => context.push(AppRoutes.myCourses),
+                    ),
+                  ),
+                  const SizedBox(height: AppSizes.space16),
+                  Builder(
+                    builder: (context) {
+                      // Find first purchased course
+                      final purchasedCourse = homeData.myCourses.firstWhere(
+                        (c) => c.isPurchased,
+                        orElse: () => homeData.myCourses.first,
+                      );
 
-                                  // Continue Learning Section (only for logged-in users with courses)
-                                  if (homeData.userProfile.id != -1 &&
-                                      homeData.myCourses.isNotEmpty) ...[
-                                    const SizedBox(height: AppSizes.space32),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSizes.paddingLg,
-                                      ),
-                                      child: _buildSectionHeader(
-                                        context,
-                                        'Continue Learning',
-                                        () => context.push(AppRoutes.myCourses),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSizes.space16),
-                                    Builder(
-                                      builder: (context) {
-                                        // Find first purchased course
-                                        final purchasedCourse = homeData
-                                            .myCourses
-                                            .firstWhere(
-                                              (c) => c.isPurchased,
-                                              orElse: () =>
-                                                  homeData.myCourses.first,
-                                            );
-
-                                        return _ContinueLearningSection(
-                                          course: purchasedCourse,
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                  const SizedBox(height: AppSizes.space32),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSizes.paddingLg,
-                                    ),
-                                    child: _buildSectionHeader(
-                                      context,
-                                      'Explore Categories',
-                                      () => context.pushNamed(
-                                        AppRoutes.categoriesName,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSizes.space16),
-                                  _CategoryListSection(
-                                    categories: homeData.categories,
-                                  ),
-
-                                  const SizedBox(height: AppSizes.space32),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSizes.paddingLg,
-                                    ),
-                                    child: _buildSectionHeader(
-                                      context,
-                                      'Popular Courses',
-                                      () => context.pushNamed('allCourses'),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSizes.space16),
-                                  _PopularCoursesList(
-                                    courses: homeData.popularCourses,
-                                  ),
-
-                                  const SizedBox(height: AppSizes.space32),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                      return _ContinueLearningSection(course: purchasedCourse);
+                    },
+                  ),
+                ],
+                const SizedBox(height: AppSizes.space32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingLg,
+                  ),
+                  child: _buildSectionHeader(
+                    context,
+                    'Explore Categories',
+                    () => context.pushNamed(AppRoutes.categoriesName),
                   ),
                 ),
-              );
-            },
-            loading: () => const Center(child: AppLoadingIndicator()),
-            error: (err, stack) => ErrorView(
-              error: err,
-              onRetry: () {
-                ref.invalidate(userProfileProvider);
-                ref.invalidate(subCategoriesProvider);
-                ref.invalidate(categoriesProvider);
-              },
+                const SizedBox(height: AppSizes.space16),
+                _CategoryListSection(categories: homeData.categories),
+
+                const SizedBox(height: AppSizes.space32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingLg,
+                  ),
+                  child: _buildSectionHeader(
+                    context,
+                    'Popular Courses',
+                    () => context.pushNamed('allCourses'),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.space16),
+                _PopularCoursesList(courses: homeData.popularCourses),
+
+                const SizedBox(height: AppSizes.space32),
+              ],
             ),
           ),
-        ],
+        );
+      },
+      loading: () =>
+          const MainScreenWrapper(child: Center(child: AppLoadingIndicator())),
+      error: (err, stack) => MainScreenWrapper(
+        child: ErrorView(
+          error: err,
+          onRetry: () {
+            ref.invalidate(userProfileProvider);
+            ref.invalidate(homeDataProvider);
+          },
+        ),
       ),
     );
   }
@@ -205,77 +165,27 @@ class HomeScreen extends ConsumerWidget {
               ],
             ),
           ),
-          if (isGuest)
-            ElevatedButton.icon(
-              onPressed: () => context.go(AppRoutes.signIn),
-              icon: const Icon(Icons.login_rounded, size: 18),
-              label: const Text('Sign In'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.space16,
-                  vertical: AppSizes.space10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                ),
-              ),
-            )
-          else
-            Row(
-              children: [
+          Row(
+            children: [
+              if (!isGuest) ...[
                 const _NotificationBell(),
                 const SizedBox(width: 12),
-                Stack(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(AppSizes.avatarBorder3),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
-                          width: 2,
-                        ),
-                      ),
-                      child: InkWell(
-                        onTap: () => context.go(AppRoutes.profile),
-                        borderRadius: BorderRadius.circular(
-                          AppSizes.avatarRadius24,
-                        ),
-                        child: CircleAvatar(
-                          radius: AppSizes.avatarRadius24,
-                          backgroundImage: NetworkImage(
-                            profile.avatar != null && profile.avatar!.isNotEmpty
-                                ? profile.avatar!
-                                : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.name)}&background=random',
-                          ),
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.surface,
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.surface,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
-            ),
+              AppProfileAvatar(
+                radius: AppSizes.avatarRadius24,
+                isGuest: isGuest,
+                imageUrl: profile.avatar,
+                onTap: () {
+                  if (isGuest) {
+                    context.push(AppRoutes.signIn);
+                  } else {
+                    context.go(AppRoutes.profile);
+                  }
+                },
+                showBorder: true,
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -285,7 +195,7 @@ class HomeScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
       child: GestureDetector(
-        onTap: () => context.go(AppRoutes.courses),
+        onTap: () => context.push(AppRoutes.courses),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSizes.paddingLg,
@@ -471,7 +381,7 @@ class _CategoryListSectionState extends State<_CategoryListSection> {
           return _CategoryPill(
             icon: Icons.category_rounded,
             label: cat.name,
-            isSelected: index == 0,
+            isSelected: false,
             onTap: () =>
                 context.pushNamed(AppRoutes.subCategoriesName, extra: cat),
           );
@@ -550,57 +460,68 @@ class _CategoryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.space16,
-          vertical: AppSizes.space12,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(AppSizes.radius2xl),
-          border: Border.all(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSizes.radius2xl),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.space20,
+            vertical: AppSizes.space12,
+          ),
+          decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primary
-                : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                : Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(AppSizes.radius2xl),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.primary
+                  : Theme.of(context).colorScheme.outline.withOpacity(0.15),
+            ),
+            boxShadow: [
+              if (isSelected)
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 2,
+                )
+              else
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.02),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isSelected
-                  ? AppColors.primary.withOpacity(0.25)
-                  : Colors.black.withOpacity(0.04), // Subtle shadow
-              blurRadius: isSelected ? 16 : 8,
-              offset: const Offset(0, 4),
-              spreadRadius: isSelected ? 2 : 0,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: AppSizes.iconSm,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.surface
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-            ),
-            const SizedBox(width: AppSizes.space8),
-            Text(
-              label,
-              style: GoogleFonts.outfit(
-                fontSize: AppSizes.fontBase,
-                fontWeight: FontWeight.w600,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
                 color: isSelected
-                    ? Theme.of(context).colorScheme.surface
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                    ? Colors.white
+                    : Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ),
-            ),
-          ],
+              const SizedBox(width: AppSizes.space8),
+              Text(
+                label,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -741,9 +662,9 @@ class _PopularCourseCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category or simple label
+                  // Instructor Name
                   Text(
-                    'COURSE', // Could be category name if available
+                    course.instructor.name,
                     style: GoogleFonts.outfit(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -824,7 +745,7 @@ class _PopularCourseCard extends StatelessWidget {
                                   course.price == '0.00' ||
                                   course.isFree
                               ? 'Free'
-                              : '\$${course.price}',
+                              : AppStrings.formatPrice(course.price),
                           style: GoogleFonts.outfit(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -964,7 +885,7 @@ class _ContinueLearningSection extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'CONTINUE LEARNING',
+                            'BY ${course.instructor.name.toUpperCase()}',
                             style: GoogleFonts.outfit(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
@@ -1054,54 +975,6 @@ class _ContinueLearningSection extends StatelessWidget {
   }
 }
 
-class _BackgroundBlobs extends StatelessWidget {
-  const _BackgroundBlobs();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          top: -AppSizes.blobOffset100,
-          right: -AppSizes.blobOffset50,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: AppSizes.blurRadius80,
-              sigmaY: AppSizes.blurRadius80,
-            ),
-            child: Container(
-              width: AppSizes.blobSize300,
-              height: AppSizes.blobSize300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: AppSizes.blobSize300,
-          left: -AppSizes.blobOffset100,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(
-              sigmaX: AppSizes.blurRadius80,
-              sigmaY: AppSizes.blurRadius80,
-            ),
-            child: Container(
-              width: AppSizes.blobSize250,
-              height: AppSizes.blobSize250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.blue.withOpacity(0.1),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _NotificationBell extends ConsumerStatefulWidget {
   const _NotificationBell();
 
@@ -1113,13 +986,6 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
   @override
   void initState() {
     super.initState();
-    // Listen to foreground messages to update count
-    FirebaseMessaging.onMessage.listen((message) {
-      if (mounted) {
-        // Invalidate the provider to refetch the unread count from server
-        ref.invalidate(unreadNotificationsCountProvider);
-      }
-    });
   }
 
   @override

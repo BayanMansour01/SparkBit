@@ -10,14 +10,14 @@ Future<void> initDependencies() async {
   // ============================================================
   // CORE
   // ============================================================
-  
+
   // TODO: Uncomment when needed
   // getIt.registerLazySingleton<Dio>(() => DioFactory.create());
 
   // ============================================================
   // DATA SOURCES
   // ============================================================
-  
+
   // TODO: Register remote data sources
   // getIt.registerLazySingleton<CoursesRemoteDataSource>(
   //   () => CoursesRemoteDataSource(getIt<Dio>()),
@@ -26,7 +26,7 @@ Future<void> initDependencies() async {
   // ============================================================
   // REPOSITORIES
   // ============================================================
-  
+
   // TODO: Register repository implementations
   // getIt.registerLazySingleton<CoursesRepository>(
   //   () => CoursesRepositoryImpl(getIt<CoursesRemoteDataSource>()),
@@ -35,7 +35,7 @@ Future<void> initDependencies() async {
   // ============================================================
   // USE CASES
   // ============================================================
-  
+
   // TODO: Register use cases
   // getIt.registerLazySingleton<GetCoursesUseCase>(
   //   () => GetCoursesUseCase(getIt<CoursesRepository>()),

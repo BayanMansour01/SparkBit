@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yuna/core/network/api_endpoints.dart';
 import '../services/logger_service.dart';
 
 /// Dio client configuration
@@ -7,8 +8,8 @@ class DioClient {
   static Dio createDio(SharedPreferences prefs) {
     final dio = Dio(
       BaseOptions(
-        // baseUrl: 'http://10.46.187.95:8000/api',
-        baseUrl: 'https://spinescent-wiley-mannered.ngrok-free.dev/api',
+        baseUrl: '${ApiEndpoints.baseURl}/api',
+        // baseUrl: 'https://spinescent-wiley-mannered.ngrok-free.dev/api',
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         headers: {

@@ -4,11 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../orders/presentation/screens/orders_screen.dart';
-
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
@@ -17,7 +16,8 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../app_config/presentation/providers/app_config_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/profile_provider.dart';
-import '../../../../core/widgets/responsive/responsive_center.dart';
+import '../../../../core/widgets/app_profile_avatar.dart';
+import '../../../../core/widgets/main_screen_wrapper.dart';
 
 /// Profile screen with user info and settings
 /// Refactored to be Stateless (Clean Architecture)
@@ -26,79 +26,23 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Stack(
-        children: [
-          // Background Elements
-          _buildBackgroundBlobs(context),
-
-          SafeArea(
-            bottom: false,
-            // Implicit Animation instead of Controller
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOut,
-              builder: (context, opacity, child) {
-                return Opacity(opacity: opacity, child: child);
-              },
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: AppSizes.space100),
-                child: ResponsiveCenter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: AppSizes.paddingLg),
-                      _buildHeader(context, ref),
-
-                      const SizedBox(height: AppSizes.space24),
-                      _buildSettings(context, ref),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+    return MainScreenWrapper(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeOut,
+        builder: (context, opacity, child) {
+          return Opacity(opacity: opacity, child: child);
+        },
+        child: Column(
+          children: [
+            const SizedBox(height: AppSizes.paddingLg),
+            _buildHeader(context, ref),
+            const SizedBox(height: AppSizes.space24),
+            _buildSettings(context, ref),
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _buildBackgroundBlobs(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          top: -100,
-          left: -50,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.12),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 100,
-          right: -100,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.blueAccent.withOpacity(0.08),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -164,17 +108,10 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      child: CircleAvatar(
+                      child: AppProfileAvatar(
                         radius: 60,
-                        backgroundColor: Theme.of(context).cardColor,
-                        backgroundImage: NetworkImage(
-                          isGuest
-                              ? 'https://ui-avatars.com/api/?name=Guest&background=random'
-                              : (profile.avatar != null &&
-                                        profile.avatar!.isNotEmpty
-                                    ? profile.avatar!
-                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.name)}&background=random'),
-                        ),
+                        isGuest: isGuest,
+                        imageUrl: profile.avatar,
                       ),
                     ),
                     if (!isGuest)
@@ -294,19 +231,14 @@ class ProfileScreen extends ConsumerWidget {
                     icon: Icons.school_rounded,
                     title: 'My Courses',
                     subtitle: 'View your enrolled courses',
-                    onTap: () => context.push(AppRoutes.myCourses),
+                    onTap: () => context.go(AppRoutes.myCourses),
                   ),
                   const Divider(indent: 50, height: 24, thickness: 0.5),
                   _ActionTile(
                     icon: Icons.receipt_long_rounded,
                     title: 'My Orders',
                     subtitle: 'Track your purchases',
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const OrdersScreen(),
-                      ),
-                    ),
+                    onTap: () => context.pushNamed(AppRoutes.ordersName),
                   ),
                   const Divider(indent: 50, height: 24, thickness: 0.5),
                 ],
@@ -329,13 +261,19 @@ class ProfileScreen extends ConsumerWidget {
                   title: 'Privacy Policy',
                   subtitle: 'Read our policies',
                   onTap: () async {
-                    final config = await ref.read(appConfigProvider.future);
-                    final url = Uri.parse(config.privacyLink);
-                    if (await canLaunchUrl(url)) {
-                      await launchUrl(
+                    final url = Uri.parse(AppStrings.privacyPolicyUrl);
+                    try {
+                      final launched = await launchUrl(
                         url,
                         mode: LaunchMode.externalApplication,
                       );
+                      if (!launched) {
+                        debugPrint(
+                          'Could not launch ${AppStrings.privacyPolicyUrl}',
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint('Error launching URL: $e');
                     }
                   },
                 ),

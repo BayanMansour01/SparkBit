@@ -25,7 +25,9 @@ class GridShimmer extends StatelessWidget {
       itemBuilder: (context, index) {
         return Container(
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            color: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
             borderRadius: BorderRadius.circular(AppSizes.radiusXl),
             border: Border.all(
               color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -61,7 +63,9 @@ class GridShimmer extends StatelessWidget {
                           height: 14,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppSizes.space8),
@@ -70,7 +74,9 @@ class GridShimmer extends StatelessWidget {
                           height: 10,
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                            borderRadius: BorderRadius.circular(
+                              AppSizes.radiusSm,
+                            ),
                           ),
                         ),
                       ],

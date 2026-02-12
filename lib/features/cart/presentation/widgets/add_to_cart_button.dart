@@ -115,7 +115,7 @@ class AddToCartButton extends ConsumerWidget {
             height: 44,
             onPressed: () {
               Navigator.pop(context);
-              context.go(AppRoutes.signIn);
+              context.push(AppRoutes.signIn);
             },
           ),
         ],
@@ -127,10 +127,7 @@ class AddToCartButton extends ConsumerWidget {
     ref.read(cartProvider.notifier).addToCart(course);
 
     // Show success snackbar
-    AppSnackBar.showSuccess(
-      context,
-      'Course added to cart',
-    );
+    AppSnackBar.showSuccess(context, 'Course added to cart');
   }
 
   void _goToCart(BuildContext context) {

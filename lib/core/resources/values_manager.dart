@@ -1,5 +1,5 @@
 /// Centralized values manager for the App
-/// 
+///
 /// This file contains all the constant values used across the app
 /// to ensure consistency and easier maintenance.
 library;

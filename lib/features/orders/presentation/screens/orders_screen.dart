@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:yuna/core/constants/app_colors.dart';
+import 'package:yuna/core/constants/app_strings.dart';
 import 'package:yuna/core/widgets/app_loading_indicator.dart';
 import 'package:yuna/core/widgets/app_button.dart';
 import 'package:yuna/core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
 import '../providers/orders_provider.dart';
-import '../screens/order_detail_screen.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -23,23 +26,15 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    // Pagination is handled by the scroll controller in the ListView,
+    // but since we are using MainScreenWrapper's scroll, we might need a different approach
+    // if we want to keep the ListView performance.
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      final notifier = ref.read(ordersProvider.notifier);
-      if (notifier.hasMore && !notifier.isLoadingMore) {
-        notifier.loadNextPage();
-      }
-    }
   }
 
   Future<void> _refreshList() async {
@@ -51,40 +46,53 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final ordersState = ref.watch(ordersProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final textColor = isDark
-        ? Colors.white
-        : const Color(0xFF1E293B); // Define textColor here for AppBar
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'My Enrollments',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            fontSize: 24,
-            color: textColor,
+    return MainScreenWrapper(
+      appBar: Column(
+        children: [
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: theme.iconTheme.color,
+                  ),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go(AppRoutes.home);
+                    }
+                  },
+                ),
+                Text(
+                  'My Enrollments',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                    color: textColor,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: theme.iconTheme.color,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+          const SizedBox(height: 10),
+        ],
       ),
-      body: ordersState.when(
+      onRefresh: _refreshList,
+      child: ordersState.when(
         data: (data) {
           if (data.data.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const SizedBox(height: 60),
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -119,45 +127,52 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             );
           }
 
-          return RefreshIndicator(
-            onRefresh: _refreshList,
-            child: ListView.separated(
-              controller: _scrollController,
-              padding: const EdgeInsets.only(
-                top: 20,
-                left: 20,
-                right: 20,
-                bottom: 120, // Increased bottom padding for navbar
-              ),
-              itemCount:
-                  data.data.length +
-                  (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
-              separatorBuilder: (context, index) => const SizedBox(height: 20),
-              itemBuilder: (context, index) {
-                if (index == data.data.length) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: AppLoadingIndicator(size: 24),
-                    ),
-                  );
-                }
-
-                final order = data.data[index];
-                return _OrderCard(
-                  order: order,
-                  isDark: isDark,
-                  onReturn: _refreshList,
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            itemCount:
+                data.data.length +
+                (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
+            separatorBuilder: (context, index) => const SizedBox(height: 20),
+            itemBuilder: (context, index) {
+              if (index == data.data.length) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: AppLoadingIndicator(size: 24),
+                  ),
                 );
-              },
-            ),
+              }
+
+              // Pagination check
+              if (index == data.data.length - 1 &&
+                  ref.read(ordersProvider.notifier).hasMore &&
+                  !ref.read(ordersProvider.notifier).isLoadingMore) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref.read(ordersProvider.notifier).loadNextPage();
+                });
+              }
+
+              final order = data.data[index];
+              return _OrderCard(
+                order: order,
+                isDark: isDark,
+                onReturn: _refreshList,
+              );
+            },
           );
         },
         error: (error, stackTrace) => ErrorView(
           error: error.toString(),
           onRetry: () => ref.read(ordersProvider.notifier).refresh(),
         ),
-        loading: () => const Center(child: AppLoadingIndicator()),
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 100),
+            child: AppLoadingIndicator(),
+          ),
+        ),
       ),
     );
   }
@@ -259,11 +274,9 @@ class _OrderCard extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => OrderDetailScreen(orderId: order.id),
-              ),
+            await context.pushNamed(
+              AppRoutes.orderDetailsName,
+              pathParameters: {'id': order.id.toString()},
             );
             onReturn();
           },
@@ -418,7 +431,7 @@ class _OrderCard extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '\$${order.totalPrice}',
+                          AppStrings.formatPrice(order.totalPrice),
                           style: GoogleFonts.outfit(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,

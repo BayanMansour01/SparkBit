@@ -66,6 +66,8 @@ class AppRoutes {
   static const String notificationsName = 'notifications';
   static const String ordersName = 'orders';
   static const String orders = '/orders';
+  static const String checkout = '/checkout';
   static const String orderDetailsRelative = 'details/:id';
   static const String orderDetailsName = 'orderDetails';
+  static const String checkoutName = 'checkout';
 }

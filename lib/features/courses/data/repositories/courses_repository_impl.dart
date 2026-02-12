@@ -13,10 +13,10 @@ import '../models/add_review_request.dart';
 /// ═══════════════════════════════════════════════════════════════════════════
 /// COURSES REPOSITORY IMPLEMENTATION
 /// ═══════════════════════════════════════════════════════════════════════════
-/// 
+///
 /// Implements [CoursesRepository] with support for both real API and mock data.
 /// Toggle [AppConfig.useMockData] to switch between modes.
-/// 
+///
 /// Author: Antigravity AI
 /// ═══════════════════════════════════════════════════════════════════════════
 
@@ -101,9 +101,13 @@ class CoursesRepositoryImpl implements CoursesRepository {
 
     // Filter by category ID
     if (categoryId != null) {
-      var categoryFiltered = filtered.where((s) => s.categoryId == categoryId).toList();
+      var categoryFiltered = filtered
+          .where((s) => s.categoryId == categoryId)
+          .toList();
       // Fallback: If no matches, show some items for demo purposes
-      filtered = categoryFiltered.isNotEmpty ? categoryFiltered : filtered.take(4).toList();
+      filtered = categoryFiltered.isNotEmpty
+          ? categoryFiltered
+          : filtered.take(4).toList();
     }
 
     // Filter by search
@@ -157,7 +161,9 @@ class CoursesRepositoryImpl implements CoursesRepository {
 
     // Filter by sub-category
     if (subCategoryId != null) {
-      var subFiltered = filtered.where((c) => c.subCategoryId == subCategoryId).toList();
+      var subFiltered = filtered
+          .where((c) => c.subCategoryId == subCategoryId)
+          .toList();
       filtered = subFiltered.isNotEmpty ? subFiltered : [];
     }
 
@@ -253,8 +259,8 @@ class CoursesRepositoryImpl implements CoursesRepository {
     // Mock Data Mode
     await MockData.simulateNetworkDelay();
 
-    var filtered = courseId != null 
-        ? MockData.getLessonsForCourse(courseId) 
+    var filtered = courseId != null
+        ? MockData.getLessonsForCourse(courseId)
         : MockData.mockLessons;
 
     // Filter by free

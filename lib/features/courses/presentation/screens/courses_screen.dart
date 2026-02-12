@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:yuna/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
@@ -11,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:yuna/core/constants/app_routes.dart';
 import 'package:yuna/features/courses/data/models/course_model.dart';
 import 'package:yuna/features/courses/presentation/providers/courses_provider.dart';
-import '../../../../core/widgets/responsive/responsive_center.dart';
+import '../../../../core/widgets/main_screen_wrapper.dart';
 
 /// Courses screen with filtering and search
 class CoursesScreen extends ConsumerWidget {
@@ -26,35 +27,27 @@ class CoursesScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: Stack(
+    return MainScreenWrapper(
+      appBar: Column(
         children: [
-          // Background Elements
-          _buildBackgroundBlobs(context),
-
-          SafeArea(
-            bottom: false,
-            child: ResponsiveCenter(
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  _buildSearchBar(context, ref),
-                  _buildCategoryTabs(context, ref),
-                  _buildSubCategoryList(context, ref),
-                  Expanded(
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 800),
-                      curve: Curves.easeOut,
-                      builder: (context, value, child) {
-                        return Opacity(opacity: value, child: child);
-                      },
-                      child: _buildCoursesList(context, ref),
-                    ),
-                  ),
-                ],
-              ),
+          _buildAppBar(context),
+          _buildSearchBar(context, ref),
+          _buildCategoryTabs(context, ref),
+          _buildSubCategoryList(context, ref),
+        ],
+      ),
+      useScroll: false, // We use a list inside expanded
+      child: Column(
+        children: [
+          Expanded(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0.0, end: 1.0),
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOut,
+              builder: (context, value, child) {
+                return Opacity(opacity: value, child: child);
+              },
+              child: _buildCoursesList(context, ref),
             ),
           ),
         ],
@@ -62,53 +55,33 @@ class CoursesScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBackgroundBlobs(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          top: -100,
-          left: -50,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.12),
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 100,
-          right: -80,
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purple.withOpacity(0.08),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildAppBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(AppSizes.paddingLg),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSizes.paddingLg,
+        vertical: AppSizes.space10,
+      ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Back Button
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            iconSize: 20,
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go(AppRoutes.home);
+              }
+            },
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          const SizedBox(width: AppSizes.space8),
+
           Text(
-            'Courses',
+            'Explore Courses',
             style: GoogleFonts.outfit(
-              fontSize: AppSizes.font4xl,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
               color: Theme.of(context).colorScheme.onSurface,
             ),
@@ -144,8 +117,6 @@ class CoursesScreen extends ConsumerWidget {
             Expanded(
               child: TextField(
                 onChanged: (value) {
-                  // Simple debounce could be added here if needed,
-                  // but for now direct update (Riverpod will cancel previous request automatically if async)
                   ref.read(searchQueryProvider.notifier).state = value;
                 },
                 decoration: InputDecoration(
@@ -169,7 +140,6 @@ class CoursesScreen extends ConsumerWidget {
   }
 
   Widget _buildCategoryTabs(BuildContext context, WidgetRef ref) {
-    // ... existing implementation but just validating it uses ref.watch(categoriesProvider) which is correct
     final categoriesAsync = ref.watch(categoriesProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
 
@@ -179,10 +149,6 @@ class CoursesScreen extends ConsumerWidget {
       child: categoriesAsync.when(
         data: (paginatedData) {
           final categories = paginatedData.data;
-          // ... NotificationListener for category pagination if horizontal scroll?
-          // Usually horizontal category lists are short or we can just load more if we reach end.
-          // keeping it simple for now, assuming 100/15 items is enough or user focused on vertical list.
-          // BUT user asked for pagination on "categories/getAll" too.
           return NotificationListener<ScrollNotification>(
             onNotification: (notification) {
               if (notification.metrics.pixels >=
@@ -229,9 +195,6 @@ class CoursesScreen extends ConsumerWidget {
 
   Widget _buildSubCategoryList(BuildContext context, WidgetRef ref) {
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
-    // If no category selected (or 'All'), we might not want to show subcategories,
-    // or we might show ALL subcategories (if API supports getting all).
-    // Assuming we hide subcategories if no category is picked to avoid clutter.
     if (selectedCategoryId == null) return const SizedBox.shrink();
 
     final subCategoriesAsync = ref.watch(subCategoriesProvider);
@@ -342,7 +305,6 @@ class CoursesScreen extends ConsumerWidget {
   }
 
   Widget _buildCoursesList(BuildContext context, WidgetRef ref) {
-    // Both search and subCategoryId are watched inside coursesProvider
     final coursesAsync = ref.watch(coursesProvider);
 
     return NotificationListener<ScrollNotification>(
@@ -598,7 +560,9 @@ class _CourseCard extends StatelessWidget {
                           )
                         else
                           Text(
-                            course.isFree ? 'Free' : '\$${course.price}',
+                            course.isFree
+                                ? 'Free'
+                                : AppStrings.formatPrice(course.price),
                             style: GoogleFonts.outfit(
                               fontSize: AppSizes.fontLg,
                               fontWeight: FontWeight.bold,

@@ -59,7 +59,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Main sequence controller
     _mainController = AnimationController(
-      duration: const Duration(milliseconds: 5500), // 5.5 seconds animation
+      duration: const Duration(milliseconds: 2500), // Reduced from 5.5 seconds
       vsync: this,
     );
 
@@ -73,7 +73,11 @@ class _SplashScreenState extends State<SplashScreen>
     _generateSymbols();
 
     _mainController.forward();
-    _checkAuthAndNavigate();
+    _mainController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        _checkAuthAndNavigate();
+      }
+    });
   }
 
   void _setupAnimations() {
@@ -162,7 +166,6 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    await Future.delayed(const Duration(milliseconds: 6000)); // 6 seconds wait
     if (!mounted) return;
 
     final prefs = getIt<SharedPreferences>();
@@ -246,20 +249,34 @@ class _SplashScreenState extends State<SplashScreen>
 
                   const SizedBox(height: 24),
 
-                  // Progress Line
+                  // Progress Line with Speed Performance Curve
                   AnimatedBuilder(
                     animation: _mainController,
                     builder: (context, child) {
+                      // Using a custom curve for the progress width to make it feel "snappy"
+                      final curve = CurvedAnimation(
+                        parent: _mainController,
+                        curve: Curves.fastOutSlowIn,
+                      );
                       return Container(
                         height: 4,
-                        width: 120 * _mainController.value,
+                        width: 160 * curve.value,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: primaryColor.withValues(
+                                alpha: 0.5 * _mainController.value,
+                              ),
+                              blurRadius: 10 * _mainController.value,
+                              spreadRadius: 2 * _mainController.value,
+                            ),
+                          ],
                           gradient: LinearGradient(
                             colors: [
-                              primaryColor.withValues(alpha: 0.1),
+                              primaryColor.withValues(alpha: 0.2),
                               primaryColor,
-                              primaryColor.withValues(alpha: 0.1),
+                              primaryColor.withValues(alpha: 0.2),
                             ],
                           ),
                         ),

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:yuna/core/constants/app_colors.dart';
+import 'package:yuna/core/constants/app_strings.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import 'package:yuna/core/widgets/app_button.dart';
 import 'package:yuna/core/utils/snackbar_utils.dart';
+import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
 import '../providers/order_detail_provider.dart';
 import '../providers/orders_provider.dart';
@@ -72,36 +76,58 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Enrollment Details',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-            color: theme.appBarTheme.foregroundColor,
+    return MainScreenWrapper(
+      appBar: Column(
+        children: [
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: theme.iconTheme.color,
+                  ),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go(AppRoutes.home);
+                    }
+                  },
+                ),
+                Text(
+                  'Enrollment Details',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 20,
+                    color: theme.appBarTheme.foregroundColor,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: theme.iconTheme.color,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+          const SizedBox(height: 10),
+        ],
       ),
-      body: orderAsync.when(
+      onRefresh: () async {
+        ref.invalidate(orderDetailProvider(widget.orderId));
+        await ref.read(orderDetailProvider(widget.orderId).future);
+      },
+      child: orderAsync.when(
         data: (order) => _buildContent(context, order, isDark),
         error: (error, stack) => ErrorView(
           error: error.toString(),
           onRetry: () => ref.refresh(orderDetailProvider(widget.orderId)),
         ),
-        loading: () => const Center(child: AppLoadingIndicator()),
+        loading: () => const Center(
+          child: Padding(
+            padding: EdgeInsets.only(top: 100),
+            child: AppLoadingIndicator(),
+          ),
+        ),
       ),
     );
   }
@@ -110,10 +136,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final statusColor = _getStatusColor(order.status.value);
     final cardColor = isDark ? AppColors.darkCard : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final secondaryTextColor =
-        isDark ? Colors.grey[400]! : const Color(0xFF64748B);
+    final secondaryTextColor = isDark
+        ? Colors.grey[400]!
+        : const Color(0xFF64748B);
 
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -143,7 +170,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                        color: statusColor.withOpacity(0.2), width: 1),
+                      color: statusColor.withOpacity(0.2),
+                      width: 1,
+                    ),
                   ),
                   child: Text(
                     order.status.displayLabel,
@@ -156,7 +185,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  '\$${order.totalPrice}',
+                  AppStrings.formatPrice(order.totalPrice),
                   style: GoogleFonts.outfit(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,
@@ -175,8 +204,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                 ),
                 const SizedBox(height: 24),
                 Divider(
-                    color: isDark ? Colors.grey[800] : Colors.grey[100],
-                    height: 1),
+                  color: isDark ? Colors.grey[800] : Colors.grey[100],
+                  height: 1,
+                ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -336,7 +366,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Image loading failed',
-                            style: GoogleFonts.outfit(color: secondaryTextColor),
+                            style: GoogleFonts.outfit(
+                              color: secondaryTextColor,
+                            ),
                           ),
                         ],
                       ),
@@ -456,7 +488,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      '\$${item.price}',
+                      AppStrings.formatPrice(item.price),
                       style: GoogleFonts.outfit(
                         fontWeight: FontWeight.bold,
                         color: AppColors.primary,
@@ -480,9 +512,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     : const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF7F1D1D)
-                        : const Color(0xFFFECACA)),
+                  color: isDark
+                      ? const Color(0xFF7F1D1D)
+                      : const Color(0xFFFECACA),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

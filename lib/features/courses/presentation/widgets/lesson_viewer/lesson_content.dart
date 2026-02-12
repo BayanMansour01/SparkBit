@@ -7,6 +7,7 @@ import 'package:yuna/core/utils/snackbar_utils.dart';
 import 'package:yuna/core/widgets/responsive/responsive_center.dart';
 import 'package:yuna/features/courses/presentation/providers/lesson_view_provider.dart';
 import 'package:yuna/features/courses/data/models/lesson_model.dart';
+import 'package:yuna/features/contact_us/presentation/screens/contact_us_screen.dart';
 
 class LessonContent extends ConsumerWidget {
   final LessonModel lesson;
@@ -32,7 +33,7 @@ class LessonContent extends ConsumerWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                     child: Text(
@@ -53,7 +54,7 @@ class LessonContent extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                       ),
                       child: Row(
@@ -85,7 +86,7 @@ class LessonContent extends ConsumerWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.amber.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                       ),
                       child: Row(
@@ -162,7 +163,7 @@ class LessonContent extends ConsumerWidget {
                   height: 1.6,
                   color: Theme.of(
                     context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
               const SizedBox(height: AppSizes.space32),
@@ -175,9 +176,98 @@ class LessonContent extends ConsumerWidget {
                   lesson.attachmentPath!,
                 ),
               ],
+              const SizedBox(height: AppSizes.paddingXl),
+              _buildSupportSection(context),
+              const SizedBox(height: AppSizes.paddingXl),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSupportSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSizes.paddingLg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.05),
+            AppColors.primary.withOpacity(0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.support_agent_rounded,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Need help with this lesson?',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: AppSizes.fontBase,
+                      ),
+                    ),
+                    Text(
+                      'Our support team is here for you',
+                      style: GoogleFonts.outfit(
+                        fontSize: AppSizes.fontXs,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ContactUsScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                ),
+              ),
+              child: Text(
+                'Contact Support',
+                style: GoogleFonts.outfit(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -204,7 +294,7 @@ class LessonContent extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Theme.of(
               context,
-            ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(AppSizes.radiusXl),
           ),
           child: Row(

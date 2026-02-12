@@ -60,11 +60,11 @@ class CategoriesScreen extends ConsumerWidget {
                           ),
                           gridDelegate:
                               SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: crossAxisCount,
-                            childAspectRatio: 0.85,
-                            crossAxisSpacing: AppSizes.space16,
-                            mainAxisSpacing: AppSizes.space16,
-                          ),
+                                crossAxisCount: crossAxisCount,
+                                childAspectRatio: 0.85,
+                                crossAxisSpacing: AppSizes.space16,
+                                mainAxisSpacing: AppSizes.space16,
+                              ),
                           itemCount: categories.length,
                           itemBuilder: (context, index) {
                             final category = categories[index];
@@ -230,7 +230,6 @@ class CategoriesScreen extends ConsumerWidget {
     );
   }
 }
-
 
 class _CategoryCard extends StatelessWidget {
   final CategoryModel category;

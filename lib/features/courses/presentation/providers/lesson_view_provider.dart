@@ -104,8 +104,9 @@ class LessonViewController
     final progress = (watchedRatio * 100).clamp(0, 100).toDouble();
 
     // 1. Update local state for UI (Progress Bar) - always update locally
-    if ((progress - state.currentProgress).abs() < 0.5 && progress < 100)
+    if ((progress - state.currentProgress).abs() < 0.5 && progress < 100) {
       return;
+    }
     state = state.copyWith(currentProgress: progress);
 
     // 2. Milestone-based Sync Logic (25%, 50%, 75%, 100%)

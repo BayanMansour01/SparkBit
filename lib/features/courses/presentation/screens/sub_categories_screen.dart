@@ -106,7 +106,7 @@ class _SubCategoriesScreenState extends ConsumerState<SubCategoriesScreen> {
                                     )
                                     .state = subCategory
                                     .id;
-                                context.go(AppRoutes.courses);
+                                context.push(AppRoutes.courses);
                               },
                             );
                           },

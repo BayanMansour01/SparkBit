@@ -34,7 +34,7 @@ class CartSummaryCard extends StatelessWidget {
           ),
         ],
         border: Border(
-           top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.05)),
+          top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.05)),
         ),
       ),
       child: SafeArea(
@@ -61,21 +61,12 @@ class CartSummaryCard extends StatelessWidget {
                       textBaseline: TextBaseline.alphabetic,
                       children: [
                         Text(
-                          totalPrice.toStringAsFixed(2),
+                          AppStrings.formatPrice(totalPrice),
                           style: GoogleFonts.outfit(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             color: theme.colorScheme.primary,
                             height: 1.0,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          AppStrings.currencySymbol,
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.primary.withOpacity(0.8),
                           ),
                         ),
                       ],
@@ -84,7 +75,10 @@ class CartSummaryCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(100),
@@ -108,7 +102,8 @@ class CartSummaryCard extends StatelessWidget {
               text: 'Enroll Now',
               isLoading: isLoading,
               onPressed: onCheckout,
-              icon: Icons.arrow_forward_rounded, // Wait, AppButton handles icon left. Let's see if I should special case icon position.
+              icon: Icons
+                  .arrow_forward_rounded, // Wait, AppButton handles icon left. Let's see if I should special case icon position.
               // For now standard is okay.
             ),
           ],

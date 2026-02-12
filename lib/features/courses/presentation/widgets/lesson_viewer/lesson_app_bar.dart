@@ -6,6 +6,7 @@ import 'package:yuna/core/constants/app_colors.dart';
 import 'package:yuna/features/courses/data/models/lesson_model.dart';
 import 'package:yuna/features/courses/presentation/providers/lesson_view_provider.dart';
 import 'package:yuna/features/courses/presentation/widgets/review_dialog.dart';
+import 'package:yuna/features/contact_us/presentation/screens/contact_us_screen.dart';
 
 class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final LessonModel lesson;
@@ -30,6 +31,16 @@ class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
         onPressed: () => controller.syncAndPop(context),
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.support_agent_rounded),
+          tooltip: 'Contact Support',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ContactUsScreen()),
+            );
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.star_rate_rounded, color: Colors.amber),
           tooltip: 'Rate Lesson',

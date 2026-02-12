@@ -7,7 +7,8 @@ import '../providers/cart_provider.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_summary_card.dart';
 import '../widgets/empty_cart_widget.dart';
-import 'checkout_screen.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/constants/app_routes.dart';
 
 class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
@@ -95,11 +96,7 @@ class CartScreen extends ConsumerWidget {
                   totalPrice: cartState.totalPrice,
                   itemCount: cartState.itemCount,
                   isLoading: cartState.isLoading,
-                  onCheckout: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CheckoutScreen()),
-                    );
-                  },
+                  onCheckout: () => context.pushNamed(AppRoutes.checkoutName),
                 ),
               ],
             ),

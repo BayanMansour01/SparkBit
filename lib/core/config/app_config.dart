@@ -7,7 +7,7 @@
 ///
 /// Author: Antigravity AI
 /// ═══════════════════════════════════════════════════════════════════════════
-library app_config;
+library;
 
 class AppConfig {
   AppConfig._();

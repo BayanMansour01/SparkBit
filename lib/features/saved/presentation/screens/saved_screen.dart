@@ -33,10 +33,7 @@ class SavedScreen extends ConsumerWidget {
                     duration: const Duration(milliseconds: 800),
                     curve: Curves.easeOut,
                     builder: (context, value, child) {
-                      return Opacity(
-                        opacity: value,
-                        child: child,
-                      );
+                      return Opacity(opacity: value, child: child);
                     },
                     child: _buildSavedList(context, ref),
                   ),
@@ -231,7 +228,6 @@ class SavedScreen extends ConsumerWidget {
     return colors[index % colors.length];
   }
 }
-
 
 class _SavedCourseCard extends StatelessWidget {
   final String title;

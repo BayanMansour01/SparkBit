@@ -34,11 +34,13 @@ class _ReviewDialogState extends State<ReviewDialog> {
 
     try {
       final useCase = getIt<AddReviewUseCase>();
-      await useCase.call(AddReviewRequest(
-        lessonId: widget.lessonId,
-        rating: _rating.toString(),
-        comment: _commentController.text,
-      ));
+      await useCase.call(
+        AddReviewRequest(
+          lessonId: widget.lessonId,
+          rating: _rating.toString(),
+          comment: _commentController.text,
+        ),
+      );
 
       if (mounted) {
         Navigator.pop(context, true);
@@ -71,9 +73,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
           children: [
             Text(
               'Rate this Lesson',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSize.s16),
@@ -129,7 +131,9 @@ class _ReviewDialogState extends State<ReviewDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppRadius.r12),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: AppPadding.p12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppPadding.p12,
+                      ),
                     ),
                     child: _isLoading
                         ? const SizedBox(

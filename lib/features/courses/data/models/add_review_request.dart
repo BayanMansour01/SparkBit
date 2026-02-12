@@ -14,5 +14,6 @@ abstract class AddReviewRequest with _$AddReviewRequest {
   factory AddReviewRequest.fromJson(Map<String, dynamic> json) =>
       _$AddReviewRequestFromJson(json);
 
+  @override
   Map<String, dynamic> toJson();
 }

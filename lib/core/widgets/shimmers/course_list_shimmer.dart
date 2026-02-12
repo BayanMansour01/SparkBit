@@ -10,7 +10,7 @@ class CourseListShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(
         AppSizes.paddingLg,
@@ -33,7 +33,9 @@ class CourseListShimmer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSizes.space16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
         border: Border.all(
           color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
@@ -79,7 +81,7 @@ class CourseListShimmer extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AppSizes.space12),
-                  
+
                   // Instructor
                   Container(
                     width: 100,
@@ -99,7 +101,9 @@ class CourseListShimmer extends StatelessWidget {
                         height: 12,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSizes.space12),
@@ -108,7 +112,9 @@ class CourseListShimmer extends StatelessWidget {
                         height: 12,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm,
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -117,7 +123,9 @@ class CourseListShimmer extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(AppSizes.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            AppSizes.radiusSm,
+                          ),
                         ),
                       ),
                     ],
