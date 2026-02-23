@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../../models/user_profile.dart';
@@ -55,6 +57,7 @@ class StudentApi {
       queryParameters: {'page': page, 'per_page': perPage},
     );
     final responseData = response.data as Map<String, dynamic>;
+    log(responseData.toString());
     final data = responseData['data'] as Map<String, dynamic>;
     return PaginatedData.fromJson(
       data,
