@@ -37,8 +37,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final type = notification.notificationType;
 
     switch (type) {
-      case 'order':
-      case 'purchase':
+      case 'order_status_changed':
         final orderId = data['order_id'] ?? data['id'];
         if (orderId != null) {
           context.pushNamed(
@@ -47,9 +46,31 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
           );
         }
         break;
-      case 'course':
-        // Navigation to course details requires a full model currently
+
+      case 'course_update':
+        final courseId = data['course_id'] ?? data['id'];
+        if (courseId != null) {
+          context.pushNamed(
+            AppRoutes.courseDetailsName,
+            pathParameters: {'id': courseId.toString()},
+          );
+        }
         break;
+
+      case 'new_lesson':
+        final courseId = data['course_id'];
+        if (courseId != null) {
+          context.pushNamed(
+            AppRoutes.courseDetailsName,
+            pathParameters: {'id': courseId.toString()},
+          );
+        }
+        break;
+
+      case 'general':
+        // General notifications - just mark as read, no navigation
+        break;
+
       default:
         // Handle other types or stay on page
         break;
@@ -164,25 +185,6 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          const Spacer(),
-          if (ref
-                  .watch(notificationsProvider(1))
-                  .valueOrNull
-                  ?.data
-                  .isNotEmpty ??
-              false)
-            TextButton(
-              onPressed: () {
-                // TODO: Mark all as read
-              },
-              child: Text(
-                'Clear All',
-                style: GoogleFonts.outfit(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -211,18 +213,33 @@ class _NotificationCard extends StatelessWidget {
     Color iconColor = AppColors.primary;
 
     switch (notification.notificationType) {
+      case 'order_status_changed':
       case 'order':
       case 'purchase':
         iconData = Icons.shopping_bag_rounded;
         iconColor = Colors.orange;
         break;
+
+      case 'course_update':
       case 'course':
         iconData = Icons.school_rounded;
         iconColor = Colors.blue;
         break;
+
+      case 'new_lesson':
       case 'lesson':
         iconData = Icons.play_circle_filled_rounded;
         iconColor = Colors.green;
+        break;
+
+      case 'general':
+        iconData = Icons.info_rounded;
+        iconColor = AppColors.primary;
+        break;
+
+      default:
+        iconData = Icons.notifications_rounded;
+        iconColor = AppColors.primary;
         break;
     }
 

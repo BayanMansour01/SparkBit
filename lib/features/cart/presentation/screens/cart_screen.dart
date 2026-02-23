@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/cart_item_card.dart';
 import '../widgets/cart_summary_card.dart';

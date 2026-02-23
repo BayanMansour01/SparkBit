@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AppConstants {
 
-@JsonKey(name: 'user_roles') List<ConstantValue> get userRoles;@JsonKey(name: 'user_statuses') List<ConstantValue> get userStatuses;@JsonKey(name: 'activity_statuses') List<ConstantValue> get activityStatuses;@JsonKey(name: 'payment_statuses') List<ConstantValue> get paymentStatuses;
+@JsonKey(name: 'user_roles') List<ConstantValue> get userRoles;@JsonKey(name: 'user_statuses') List<ConstantValue> get userStatuses;@JsonKey(name: 'activity_statuses') List<ConstantValue> get activityStatuses;@JsonKey(name: 'order_statuses') List<ConstantValue> get orderStatuses;
 /// Create a copy of AppConstants
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $AppConstantsCopyWith<AppConstants> get copyWith => _$AppConstantsCopyWithImpl<A
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppConstants&&const DeepCollectionEquality().equals(other.userRoles, userRoles)&&const DeepCollectionEquality().equals(other.userStatuses, userStatuses)&&const DeepCollectionEquality().equals(other.activityStatuses, activityStatuses)&&const DeepCollectionEquality().equals(other.paymentStatuses, paymentStatuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AppConstants&&const DeepCollectionEquality().equals(other.userRoles, userRoles)&&const DeepCollectionEquality().equals(other.userStatuses, userStatuses)&&const DeepCollectionEquality().equals(other.activityStatuses, activityStatuses)&&const DeepCollectionEquality().equals(other.orderStatuses, orderStatuses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(userRoles),const DeepCollectionEquality().hash(userStatuses),const DeepCollectionEquality().hash(activityStatuses),const DeepCollectionEquality().hash(paymentStatuses));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(userRoles),const DeepCollectionEquality().hash(userStatuses),const DeepCollectionEquality().hash(activityStatuses),const DeepCollectionEquality().hash(orderStatuses));
 
 @override
 String toString() {
-  return 'AppConstants(userRoles: $userRoles, userStatuses: $userStatuses, activityStatuses: $activityStatuses, paymentStatuses: $paymentStatuses)';
+  return 'AppConstants(userRoles: $userRoles, userStatuses: $userStatuses, activityStatuses: $activityStatuses, orderStatuses: $orderStatuses)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $AppConstantsCopyWith<$Res>  {
   factory $AppConstantsCopyWith(AppConstants value, $Res Function(AppConstants) _then) = _$AppConstantsCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'user_roles') List<ConstantValue> userRoles,@JsonKey(name: 'user_statuses') List<ConstantValue> userStatuses,@JsonKey(name: 'activity_statuses') List<ConstantValue> activityStatuses,@JsonKey(name: 'payment_statuses') List<ConstantValue> paymentStatuses
+@JsonKey(name: 'user_roles') List<ConstantValue> userRoles,@JsonKey(name: 'user_statuses') List<ConstantValue> userStatuses,@JsonKey(name: 'activity_statuses') List<ConstantValue> activityStatuses,@JsonKey(name: 'order_statuses') List<ConstantValue> orderStatuses
 });
 
 
@@ -65,12 +65,12 @@ class _$AppConstantsCopyWithImpl<$Res>
 
 /// Create a copy of AppConstants
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? userRoles = null,Object? userStatuses = null,Object? activityStatuses = null,Object? paymentStatuses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? userRoles = null,Object? userStatuses = null,Object? activityStatuses = null,Object? orderStatuses = null,}) {
   return _then(_self.copyWith(
 userRoles: null == userRoles ? _self.userRoles : userRoles // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,userStatuses: null == userStatuses ? _self.userStatuses : userStatuses // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,activityStatuses: null == activityStatuses ? _self.activityStatuses : activityStatuses // ignore: cast_nullable_to_non_nullable
-as List<ConstantValue>,paymentStatuses: null == paymentStatuses ? _self.paymentStatuses : paymentStatuses // ignore: cast_nullable_to_non_nullable
+as List<ConstantValue>,orderStatuses: null == orderStatuses ? _self.orderStatuses : orderStatuses // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,
   ));
 }
@@ -156,10 +156,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'payment_statuses')  List<ConstantValue> paymentStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'order_statuses')  List<ConstantValue> orderStatuses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AppConstants() when $default != null:
-return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.paymentStatuses);case _:
+return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.orderStatuses);case _:
   return orElse();
 
 }
@@ -177,10 +177,10 @@ return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'payment_statuses')  List<ConstantValue> paymentStatuses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'order_statuses')  List<ConstantValue> orderStatuses)  $default,) {final _that = this;
 switch (_that) {
 case _AppConstants():
-return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.paymentStatuses);case _:
+return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.orderStatuses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +197,10 @@ return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'payment_statuses')  List<ConstantValue> paymentStatuses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'user_roles')  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses')  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses')  List<ConstantValue> activityStatuses, @JsonKey(name: 'order_statuses')  List<ConstantValue> orderStatuses)?  $default,) {final _that = this;
 switch (_that) {
 case _AppConstants() when $default != null:
-return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.paymentStatuses);case _:
+return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.orderStatuses);case _:
   return null;
 
 }
@@ -212,7 +212,7 @@ return $default(_that.userRoles,_that.userStatuses,_that.activityStatuses,_that.
 @JsonSerializable()
 
 class _AppConstants implements AppConstants {
-  const _AppConstants({@JsonKey(name: 'user_roles') required final  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses') required final  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses') required final  List<ConstantValue> activityStatuses, @JsonKey(name: 'payment_statuses') required final  List<ConstantValue> paymentStatuses}): _userRoles = userRoles,_userStatuses = userStatuses,_activityStatuses = activityStatuses,_paymentStatuses = paymentStatuses;
+  const _AppConstants({@JsonKey(name: 'user_roles') required final  List<ConstantValue> userRoles, @JsonKey(name: 'user_statuses') required final  List<ConstantValue> userStatuses, @JsonKey(name: 'activity_statuses') required final  List<ConstantValue> activityStatuses, @JsonKey(name: 'order_statuses') required final  List<ConstantValue> orderStatuses}): _userRoles = userRoles,_userStatuses = userStatuses,_activityStatuses = activityStatuses,_orderStatuses = orderStatuses;
   factory _AppConstants.fromJson(Map<String, dynamic> json) => _$AppConstantsFromJson(json);
 
  final  List<ConstantValue> _userRoles;
@@ -236,11 +236,11 @@ class _AppConstants implements AppConstants {
   return EqualUnmodifiableListView(_activityStatuses);
 }
 
- final  List<ConstantValue> _paymentStatuses;
-@override@JsonKey(name: 'payment_statuses') List<ConstantValue> get paymentStatuses {
-  if (_paymentStatuses is EqualUnmodifiableListView) return _paymentStatuses;
+ final  List<ConstantValue> _orderStatuses;
+@override@JsonKey(name: 'order_statuses') List<ConstantValue> get orderStatuses {
+  if (_orderStatuses is EqualUnmodifiableListView) return _orderStatuses;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_paymentStatuses);
+  return EqualUnmodifiableListView(_orderStatuses);
 }
 
 
@@ -257,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppConstants&&const DeepCollectionEquality().equals(other._userRoles, _userRoles)&&const DeepCollectionEquality().equals(other._userStatuses, _userStatuses)&&const DeepCollectionEquality().equals(other._activityStatuses, _activityStatuses)&&const DeepCollectionEquality().equals(other._paymentStatuses, _paymentStatuses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AppConstants&&const DeepCollectionEquality().equals(other._userRoles, _userRoles)&&const DeepCollectionEquality().equals(other._userStatuses, _userStatuses)&&const DeepCollectionEquality().equals(other._activityStatuses, _activityStatuses)&&const DeepCollectionEquality().equals(other._orderStatuses, _orderStatuses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_userRoles),const DeepCollectionEquality().hash(_userStatuses),const DeepCollectionEquality().hash(_activityStatuses),const DeepCollectionEquality().hash(_paymentStatuses));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_userRoles),const DeepCollectionEquality().hash(_userStatuses),const DeepCollectionEquality().hash(_activityStatuses),const DeepCollectionEquality().hash(_orderStatuses));
 
 @override
 String toString() {
-  return 'AppConstants(userRoles: $userRoles, userStatuses: $userStatuses, activityStatuses: $activityStatuses, paymentStatuses: $paymentStatuses)';
+  return 'AppConstants(userRoles: $userRoles, userStatuses: $userStatuses, activityStatuses: $activityStatuses, orderStatuses: $orderStatuses)';
 }
 
 
@@ -277,7 +277,7 @@ abstract mixin class _$AppConstantsCopyWith<$Res> implements $AppConstantsCopyWi
   factory _$AppConstantsCopyWith(_AppConstants value, $Res Function(_AppConstants) _then) = __$AppConstantsCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'user_roles') List<ConstantValue> userRoles,@JsonKey(name: 'user_statuses') List<ConstantValue> userStatuses,@JsonKey(name: 'activity_statuses') List<ConstantValue> activityStatuses,@JsonKey(name: 'payment_statuses') List<ConstantValue> paymentStatuses
+@JsonKey(name: 'user_roles') List<ConstantValue> userRoles,@JsonKey(name: 'user_statuses') List<ConstantValue> userStatuses,@JsonKey(name: 'activity_statuses') List<ConstantValue> activityStatuses,@JsonKey(name: 'order_statuses') List<ConstantValue> orderStatuses
 });
 
 
@@ -294,12 +294,12 @@ class __$AppConstantsCopyWithImpl<$Res>
 
 /// Create a copy of AppConstants
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? userRoles = null,Object? userStatuses = null,Object? activityStatuses = null,Object? paymentStatuses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? userRoles = null,Object? userStatuses = null,Object? activityStatuses = null,Object? orderStatuses = null,}) {
   return _then(_AppConstants(
 userRoles: null == userRoles ? _self._userRoles : userRoles // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,userStatuses: null == userStatuses ? _self._userStatuses : userStatuses // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,activityStatuses: null == activityStatuses ? _self._activityStatuses : activityStatuses // ignore: cast_nullable_to_non_nullable
-as List<ConstantValue>,paymentStatuses: null == paymentStatuses ? _self._paymentStatuses : paymentStatuses // ignore: cast_nullable_to_non_nullable
+as List<ConstantValue>,orderStatuses: null == orderStatuses ? _self._orderStatuses : orderStatuses // ignore: cast_nullable_to_non_nullable
 as List<ConstantValue>,
   ));
 }

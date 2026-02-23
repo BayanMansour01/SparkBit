@@ -11,8 +11,7 @@ abstract class AppConstants with _$AppConstants {
     @JsonKey(name: 'user_statuses') required List<ConstantValue> userStatuses,
     @JsonKey(name: 'activity_statuses')
     required List<ConstantValue> activityStatuses,
-    @JsonKey(name: 'payment_statuses')
-    required List<ConstantValue> paymentStatuses,
+    @JsonKey(name: 'order_statuses') required List<ConstantValue> orderStatuses,
   }) = _AppConstants;
 
   factory AppConstants.fromJson(Map<String, dynamic> json) =>

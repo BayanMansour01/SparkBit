@@ -9,6 +9,9 @@ import '../resources/values_manager.dart';
 import 'app_update_listener.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
 import '../../features/notifications/presentation/providers/notifications_provider.dart';
+import '../../features/orders/presentation/providers/orders_provider.dart';
+import '../../features/courses/presentation/providers/courses_provider.dart';
+import '../../features/home/presentation/providers/home_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../utils/snackbar_utils.dart';
 
@@ -35,9 +38,32 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     // Listen to foreground messages
     FirebaseMessaging.onMessage.listen((message) {
       debugPrint('🔔 Foreground Notification: ${message.notification?.title}');
+      debugPrint('🔔 Payload: ${message.data}');
       if (mounted) {
         // Invalidate the provider to refetch the unread count from server
+        debugPrint('🔔 Invalidating unread count provider...');
         ref.invalidate(unreadNotificationsCountProvider);
+
+        // Force immediate refresh by reading the provider
+        ref.read(unreadNotificationsCountProvider);
+
+        // Handle order status changed notifications
+        final type = message.data['notification_type'] ?? message.data['type'];
+        if (type == 'order_status_changed') {
+          debugPrint('🔔 Order status changed, refreshing orders...');
+          ref.invalidate(ordersProvider);
+
+          // Check if order was approved to refresh courses
+          final orderStatus = message.data['order_status'];
+          if (orderStatus == 'approved') {
+            debugPrint('🔔 Order approved, refreshing courses and home...');
+            ref.invalidate(myCoursesProvider);
+            ref.invalidate(coursesProvider);
+            ref.invalidate(homeDataProvider);
+            ref.invalidate(homePopularCoursesProvider);
+            ref.invalidate(homeCategoriesProvider);
+          }
+        }
 
         // Show interactive snackbar for real-time navigation
         if (message.notification != null) {
@@ -54,6 +80,25 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     // Handle notification tap when app is in background but still running
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
       debugPrint('🔔 Notification Tapped (Background): ${message.data}');
+
+      // Refresh orders if it's an order status changed notification
+      final type = message.data['notification_type'] ?? message.data['type'];
+      if (type == 'order_status_changed') {
+        debugPrint('🔔 Order status changed, refreshing orders...');
+        ref.invalidate(ordersProvider);
+
+        // Check if order was approved to refresh courses
+        final orderStatus = message.data['order_status'];
+        if (orderStatus == 'approved') {
+          debugPrint('🔔 Order approved, refreshing courses and home...');
+          ref.invalidate(myCoursesProvider);
+          ref.invalidate(coursesProvider);
+          ref.invalidate(homeDataProvider);
+          ref.invalidate(homePopularCoursesProvider);
+          ref.invalidate(homeCategoriesProvider);
+        }
+      }
+
       _handleNotificationNavigation(message.data);
     });
 
@@ -61,6 +106,25 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     FirebaseMessaging.instance.getInitialMessage().then((message) {
       if (message != null) {
         debugPrint('🔔 Notification Tapped (Terminated): ${message.data}');
+
+        // Refresh orders if it's an order status changed notification
+        final type = message.data['notification_type'] ?? message.data['type'];
+        if (type == 'order_status_changed') {
+          debugPrint('🔔 Order status changed, refreshing orders...');
+          ref.invalidate(ordersProvider);
+
+          // Check if order was approved to refresh courses
+          final orderStatus = message.data['order_status'];
+          if (orderStatus == 'approved') {
+            debugPrint('🔔 Order approved, refreshing courses and home...');
+            ref.invalidate(myCoursesProvider);
+            ref.invalidate(coursesProvider);
+            ref.invalidate(homeDataProvider);
+            ref.invalidate(homePopularCoursesProvider);
+            ref.invalidate(homeCategoriesProvider);
+          }
+        }
+
         _handleNotificationNavigation(message.data);
       }
     });
@@ -73,12 +137,16 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     switch (type) {
       case 'order':
       case 'purchase':
+      case 'order_status_changed':
         final orderId = data['order_id'] ?? data['id'];
         if (orderId != null) {
           context.pushNamed(
             AppRoutes.orderDetailsName,
             pathParameters: {'id': orderId.toString()},
           );
+        } else {
+          // No specific order ID, go to orders list
+          context.push(AppRoutes.orders);
         }
         break;
       case 'course':
@@ -364,12 +432,7 @@ class _CustomBottomNavBar extends StatelessWidget {
                     label: isGuest ? 'Browse' : 'My Courses',
                     onTap: () => onTap(1),
                   ),
-                  // _NavBarItem(
-                  //   icon: Icons.bookmark_rounded,
-                  //   isActive: currentIndex == 2,
-                  //   label: 'Saved',
-                  //   onTap: () => onTap(2),
-                  // ),
+
                   _NavBarItem(
                     icon: Icons.person_rounded,
                     isActive: currentIndex == 2, // Shifted index

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 
 class EmptyCartWidget extends StatelessWidget {
   const EmptyCartWidget({super.key});

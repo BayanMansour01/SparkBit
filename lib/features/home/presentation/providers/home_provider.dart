@@ -13,54 +13,30 @@ class HomeData {
   final List<CourseModel> popularCourses;
   final List<CategoryModel> categories;
   final List<CourseModel> myCourses;
-  final DateTime loadedAt;
 
   HomeData({
     required this.userProfile,
     required this.popularCourses,
     required this.categories,
     required this.myCourses,
-    DateTime? loadedAt,
-  }) : loadedAt = loadedAt ?? DateTime.now();
-
-  // Check if data is still fresh (less than 5 minutes old)
-  bool get isFresh {
-    final now = DateTime.now();
-    return now.difference(loadedAt).inMinutes < 5;
-  }
+  });
 }
 
-/// Cached home data provider with smart refresh
-/// This provider will NOT reload data every time you navigate back to home
-/// It will only refresh if:
-/// 1. Data is older than 5 minutes
-/// 2. Explicitly invalidated
-/// 3. App is restarted
+/// Home data provider - aggregates data from multiple providers
+/// This provider watches other providers and rebuilds automatically when they change
+/// Individual providers (coursesProvider, myCoursesProvider) handle their own caching
 final homeDataProvider = FutureProvider<HomeData>((ref) async {
   // Get user profile first to determine current user state
   // This must be watched first so that if userProfile changes, this provider rebuilds
   final userProfile = await ref.watch(userProfileProvider.future);
   final isGuest = userProfile.id == -1;
 
-  // Check if we have cached data AND if it belongs to the same user
-  final cachedData = ref.state.value;
-
-  // Only return cached data if:
-  // 1. It exists
-  // 2. It is fresh (< 5 mins)
-  // 3. The user ID matches the current user (handles logout logic)
-  if (cachedData != null &&
-      cachedData.isFresh &&
-      cachedData.userProfile.id == userProfile.id) {
-    return cachedData;
-  }
-
   // Execute requests in parallel
   // Skip my-courses for guests
   final futures = <Future>[
     Future.value(userProfile), // Already fetched
-    ref.watch(coursesProvider.future),
-    ref.watch(categoriesProvider.future),
+    ref.watch(homePopularCoursesProvider.future), // Use home-specific provider
+    ref.watch(homeCategoriesProvider.future), // Use home-specific provider
     if (!isGuest)
       ref.watch(myCoursesProvider.future).catchError((e) {
         LoggerService.logToFile('Failed to fetch my courses in Home: $e');
@@ -87,14 +63,7 @@ final homeDataProvider = FutureProvider<HomeData>((ref) async {
     myCourses: isGuest
         ? [] // Empty list for guests
         : (results[3] as PaginatedData<CourseModel>).data,
-    loadedAt: DateTime.now(),
   );
-});
-
-/// Provider to check if home data needs refresh
-final shouldRefreshHomeProvider = Provider<bool>((ref) {
-  final homeData = ref.watch(homeDataProvider).value;
-  return homeData == null || !homeData.isFresh;
 });
 
 /// Manual refresh function
@@ -102,7 +71,7 @@ final shouldRefreshHomeProvider = Provider<bool>((ref) {
 void refreshHomeData(WidgetRef ref) {
   ref.invalidate(homeDataProvider);
   ref.invalidate(userProfileProvider);
-  ref.invalidate(coursesProvider);
-  ref.invalidate(categoriesProvider);
+  ref.invalidate(homePopularCoursesProvider); // Use home-specific provider
+  ref.invalidate(homeCategoriesProvider); // Use home-specific provider
   ref.invalidate(myCoursesProvider);
 }

@@ -1,4 +1,4 @@
-import 'package:yuna/core/network/models/paginated_data.dart';
+import 'package:sparkbit/core/network/models/paginated_data.dart';
 import '../../domain/repositories/order_repository.dart';
 import '../datasources/order_remote_datasource.dart';
 import '../models/order_model.dart';

@@ -11,7 +11,7 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../app_config/presentation/providers/app_config_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -114,23 +114,6 @@ class ProfileScreen extends ConsumerWidget {
                         imageUrl: profile.avatar,
                       ),
                     ),
-                    if (!isGuest)
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).scaffoldBackgroundColor,
-                            width: 3,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -189,6 +172,7 @@ class ProfileScreen extends ConsumerWidget {
 
     final profile = ref.watch(userProfileProvider).valueOrNull;
     final isGuest = profile?.id == -1;
+    final config = ref.watch(appConfigProvider);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),

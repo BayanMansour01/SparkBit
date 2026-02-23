@@ -7,7 +7,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/resources/assets_manager.dart';
 import '../../../../core/resources/values_manager.dart';
 
-/// Screen shown when app update is required
 class UpdateRequiredScreen extends StatelessWidget {
   final String? message;
   final String currentVersion;
@@ -25,14 +24,7 @@ class UpdateRequiredScreen extends StatelessWidget {
   });
 
   Future<void> _openStore() async {
-    String? storeUrl;
-
-    if (Platform.isAndroid && androidUrl != null) {
-      storeUrl = androidUrl;
-    } else if (Platform.isIOS && iosUrl != null) {
-      storeUrl = iosUrl;
-    }
-
+    String? storeUrl = Platform.isAndroid ? androidUrl : iosUrl;
     if (storeUrl != null) {
       final uri = Uri.parse(storeUrl);
       if (await canLaunchUrl(uri)) {
@@ -43,156 +35,184 @@ class UpdateRequiredScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppPadding.p24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Update Lottie Animation
-              Lottie.asset(
-                AppLotties.updateApp,
-                width: AppSize.s250,
-                height: AppSize.s250,
-                fit: BoxFit.contain,
+      body: Stack(
+        children: [
+          // خلفية بتدرج ناعم
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        theme.colorScheme.surface,
+                        theme.colorScheme.surfaceContainer,
+                      ]
+                    : [
+                        Colors.white,
+                        theme.colorScheme.primary.withOpacity(0.08),
+                      ],
               ),
-
-              const SizedBox(height: AppSize.s32),
-
-              // Title
-              Text(
-                'تحديث مطلوب',
-                style: GoogleFonts.outfit(
-                  fontSize: AppSize.s24,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: AppSize.s16),
-
-              // Message
-              Text(
-                message ??
-                    'يرجى تحديث التطبيق للحصول على أحدث الميزات والتحسينات.',
-                style: GoogleFonts.outfit(
-                  fontSize: AppSize.s16,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withOpacity(0.7),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-
-              const SizedBox(height: AppSize.s24),
-
-              // Version info
-              Container(
-                padding: const EdgeInsets.all(AppPadding.p16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(AppRadius.r16),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.1),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    _buildVersionRow(
-                      context,
-                      'الإصدار الحالي',
-                      currentVersion,
-                      Colors.orange,
-                    ),
-                    const SizedBox(height: AppSize.s12),
-                    _buildVersionRow(
-                      context,
-                      'الإصدار المطلوب',
-                      latestVersion,
-                      AppColors.primary,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: AppSize.s40),
-
-              // Update button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _openStore,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.darkBackground,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppPadding.p16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.r16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.download_rounded),
-                      const SizedBox(width: AppSize.s8),
-                      Text(
-                        'تحديث الآن',
-                        style: GoogleFonts.outfit(
-                          fontSize: AppSize.s16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppPadding.p32),
+              child: Column(
+                children: [
+                  const Spacer(),
+
+                  // انيميشن التحديث مع تأثير ظل
+                  Center(
+                    child: Lottie.asset(
+                      AppLotties.updateApp,
+                      width: AppSize.s280,
+                      height: AppSize.s280,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSize.s24),
+
+                  // نصوص واضحة واحترافية
+                  Text(
+                    'New Version Available',
+                    style: GoogleFonts.outfit(
+                      fontSize: AppSize.s28,
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSize.s12),
+
+                  Text(
+                    message ??
+                        "We've added new features and fixed some bugs to give you a better experience.",
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: AppSize.s16,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      height: 1.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSize.s40),
+
+                  // بطاقة الإصدارات بتصميم زجاجي (Card)
+                  Container(
+                    padding: const EdgeInsets.all(AppPadding.p20),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withOpacity(0.05)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(AppRadius.r24),
+                      border: Border.all(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildVersionInfo(
+                          context,
+                          'Current',
+                          currentVersion,
+                          Colors.grey,
+                        ),
+                        Icon(
+                          Icons.arrow_forward_rounded,
+                          color: theme.colorScheme.primary.withOpacity(0.5),
+                        ),
+                        _buildVersionInfo(
+                          context,
+                          'Latest',
+                          latestVersion,
+                          theme.colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Spacer(),
+
+                  // زر التحديث بتصميم عريض وبارز
+                  ElevatedButton(
+                    onPressed: _openStore,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(double.infinity, 60),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.r20),
+                      ),
+                    ),
+                    child: Text(
+                      'Update Now',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppSize.s16),
+
+                  Text(
+                    'Your update is ready in the Store',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                    ),
+                  ),
+
+                  const SizedBox(height: AppPadding.p24),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildVersionRow(
+  Widget _buildVersionInfo(
     BuildContext context,
     String label,
     String version,
     Color color,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
         Text(
           label,
           style: GoogleFonts.outfit(
-            fontSize: AppSize.s14,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+            fontSize: 12,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppPadding.p12,
-            vertical: AppPadding.p6,
-          ),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppRadius.r8),
-          ),
-          child: Text(
-            version,
-            style: GoogleFonts.outfit(
-              fontSize: AppSize.s14,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+        const SizedBox(height: 4),
+        Text(
+          'v$version',
+          style: GoogleFonts.outfit(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
         ),
       ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_strings.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 
 class CartSummaryCard extends StatelessWidget {
   final double totalPrice;

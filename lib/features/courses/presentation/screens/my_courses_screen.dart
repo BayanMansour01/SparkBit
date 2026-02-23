@@ -254,12 +254,12 @@ class _MyCourseCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: isDark
                               ? Colors.white
                               : const Color(0xFF1E293B),
-                          height: 1.2,
+                          height: 1.3,
                         ),
                       ),
                       const SizedBox(height: 4),

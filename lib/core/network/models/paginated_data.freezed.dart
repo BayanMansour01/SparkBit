@@ -11,7 +11,6 @@ part of 'paginated_data.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$PaginatedData<T> {
 
@@ -22,8 +21,6 @@ mixin _$PaginatedData<T> {
 @pragma('vm:prefer-inline')
 $PaginatedDataCopyWith<T, PaginatedData<T>> get copyWith => _$PaginatedDataCopyWithImpl<T, PaginatedData<T>>(this as PaginatedData<T>, _$identity);
 
-  /// Serializes this PaginatedData to a JSON map.
-  Map<String, dynamic> toJson(Object? Function(T) toJsonT);
 
 
 @override
@@ -31,7 +28,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is PaginatedData<T>&&const DeepCollectionEquality().equals(other.data, data)&&(identical(other.pagination, pagination) || other.pagination == pagination));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(data),pagination);
 
@@ -216,11 +213,11 @@ return $default(_that.data,_that.pagination);case _:
 }
 
 /// @nodoc
-@JsonSerializable(genericArgumentFactories: true)
+
 
 class _PaginatedData<T> implements PaginatedData<T> {
   const _PaginatedData({required final  List<T> data, required this.pagination}): _data = data;
-  factory _PaginatedData.fromJson(Map<String, dynamic> json,T Function(Object?) fromJsonT) => _$PaginatedDataFromJson(json,fromJsonT);
+  
 
  final  List<T> _data;
 @override List<T> get data {
@@ -237,17 +234,14 @@ class _PaginatedData<T> implements PaginatedData<T> {
 @pragma('vm:prefer-inline')
 _$PaginatedDataCopyWith<T, _PaginatedData<T>> get copyWith => __$PaginatedDataCopyWithImpl<T, _PaginatedData<T>>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson(Object? Function(T) toJsonT) {
-  return _$PaginatedDataToJson<T>(this, toJsonT);
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _PaginatedData<T>&&const DeepCollectionEquality().equals(other._data, _data)&&(identical(other.pagination, pagination) || other.pagination == pagination));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_data),pagination);
 

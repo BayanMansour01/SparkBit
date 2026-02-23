@@ -1,4 +1,4 @@
-import 'package:yuna/core/network/api_endpoints.dart';
+import 'package:sparkbit/core/network/api_endpoints.dart';
 
 /// App strings constants
 class AppStrings {

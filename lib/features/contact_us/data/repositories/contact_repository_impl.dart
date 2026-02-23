@@ -1,6 +1,6 @@
-import 'package:yuna/core/network/api/student_api.dart';
-import 'package:yuna/features/contact_us/data/models/contact_method_model.dart';
-import 'package:yuna/features/contact_us/domain/repositories/contact_repository.dart';
+import 'package:sparkbit/core/network/api/student_api.dart';
+import 'package:sparkbit/features/contact_us/data/models/contact_method_model.dart';
+import 'package:sparkbit/features/contact_us/domain/repositories/contact_repository.dart';
 
 class ContactRepositoryImpl implements ContactRepository {
   final StudentApi _api;

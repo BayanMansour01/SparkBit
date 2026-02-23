@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -13,16 +14,11 @@ import '../providers/courses_provider.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../../core/widgets/responsive/responsive_layout.dart';
 
-final _categoriesInitProvider = Provider.autoDispose((ref) {
-  ref.read(searchQueryProvider.notifier).state = '';
-});
-
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(_categoriesInitProvider);
     final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
@@ -277,13 +273,28 @@ class _CategoryCard extends StatelessWidget {
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.category_rounded, // Placeholder
-                    size: 40,
-                    color: color,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppSizes.radiusXl),
                   ),
-                  // child: Image.network(category.imageUrl, ...),
+                  child: CachedNetworkImage(
+                    imageUrl: category.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Center(
+                      child: Icon(
+                        Icons.category_rounded,
+                        size: 40,
+                        color: color,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Center(
+                      child: Icon(
+                        Icons.category_rounded,
+                        size: 40,
+                        color: color,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -301,7 +312,7 @@ class _CategoryCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         category.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
                           fontSize: AppSizes.fontMd,
@@ -312,13 +323,15 @@ class _CategoryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSizes.space4),
                     Text(
-                      '${index + 5} Topics', // Dummy data or if API provider count
+                      category.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
                         fontSize: AppSizes.fontXs,
                         color: Theme.of(
                           context,
                         ).colorScheme.onSurface.withOpacity(0.5),
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],

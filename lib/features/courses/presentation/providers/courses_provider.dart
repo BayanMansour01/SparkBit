@@ -70,6 +70,27 @@ class LessonsNotifier
     state = AsyncValue.data(currentData.copyWith(data: updatedList));
   }
 
+  /// Optimistic Update: Update lesson avg rating locally after a review
+  void updateLessonRating(int lessonId, double newRating) {
+    if (!state.hasValue || state.value == null) return;
+
+    final currentData = state.value!;
+    final updatedList = currentData.data.map((lesson) {
+      if (lesson.id == lessonId) {
+        // If lesson had no rating, use the new rating directly
+        // If it had a rating, average it (approximate until API returns real value)
+        final currentRating = lesson.avgRating ?? 0;
+        final updatedRating = currentRating == 0
+            ? newRating
+            : (currentRating + newRating) / 2;
+        return lesson.copyWith(avgRating: updatedRating);
+      }
+      return lesson;
+    }).toList();
+
+    state = AsyncValue.data(currentData.copyWith(data: updatedList));
+  }
+
   /// Silent Refresh: Fetch fresh data from API without clearing current state
   Future<void> refreshData() async {
     try {
@@ -101,12 +122,48 @@ final selectedCategoryIdProvider = StateProvider<int?>((ref) => null);
 /// Selected sub-category ID state provider
 final selectedSubCategoryIdProvider = StateProvider<int?>((ref) => null);
 
+// --- HOME PAGE PROVIDERS (No Search/Filter) ---
+
+/// Categories Provider for Home Page (no search/filter)
+class HomeCategoriesNotifier
+    extends AsyncNotifier<PaginatedData<CategoryModel>> {
+  @override
+  Future<PaginatedData<CategoryModel>> build() async {
+    ref.keepAlive();
+    final useCase = ref.watch(getCategoriesUseCaseProvider);
+    return await useCase(search: '', perPage: 10, page: 1);
+  }
+}
+
+final homeCategoriesProvider =
+    AsyncNotifierProvider<HomeCategoriesNotifier, PaginatedData<CategoryModel>>(
+      HomeCategoriesNotifier.new,
+    );
+
+/// Popular Courses Provider for Home Page (no search/filter)
+class HomePopularCoursesNotifier
+    extends AsyncNotifier<PaginatedData<CourseModel>> {
+  @override
+  Future<PaginatedData<CourseModel>> build() async {
+    ref.keepAlive();
+    final useCase = ref.watch(getCoursesUseCaseProvider);
+    return await useCase(subCategoryId: null, search: '', perPage: 15, page: 1);
+  }
+}
+
+final homePopularCoursesProvider =
+    AsyncNotifierProvider<
+      HomePopularCoursesNotifier,
+      PaginatedData<CourseModel>
+    >(HomePopularCoursesNotifier.new);
+
 // --- NOTIFIERS ---
 
 class CategoriesNotifier extends AsyncNotifier<PaginatedData<CategoryModel>> {
   int _page = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  String _lastSearch = '';
 
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore;
@@ -114,10 +171,17 @@ class CategoriesNotifier extends AsyncNotifier<PaginatedData<CategoryModel>> {
   @override
   Future<PaginatedData<CategoryModel>> build() async {
     ref.keepAlive();
+    final search = ref.watch(searchQueryProvider);
+
+    // 🚀 SMART CACHING: Only fetch if search changed or no data exists
+    if (state.hasValue && state.value != null && search == _lastSearch) {
+      return state.value!;
+    }
+
     _page = 1;
     _hasMore = true;
     _isLoadingMore = false;
-    final search = ref.watch(searchQueryProvider);
+    _lastSearch = search;
 
     final useCase = ref.watch(getCategoriesUseCaseProvider);
     final result = await useCase(search: search, perPage: 10, page: 1);
@@ -160,6 +224,12 @@ class CategoriesNotifier extends AsyncNotifier<PaginatedData<CategoryModel>> {
       _isLoadingMore = false;
     }
   }
+
+  /// Force refresh data (bypass cache)
+  Future<void> forceRefresh() async {
+    _lastSearch = ''; // Reset cache
+    ref.invalidateSelf();
+  }
 }
 
 class SubCategoriesNotifier
@@ -167,6 +237,8 @@ class SubCategoriesNotifier
   int _page = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  String _lastSearch = '';
+  int? _lastCategoryId;
 
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore;
@@ -174,12 +246,22 @@ class SubCategoriesNotifier
   @override
   Future<PaginatedData<SubCategoryModel>> build() async {
     ref.keepAlive();
+    final search = ref.watch(searchQueryProvider);
+    final categoryId = ref.watch(selectedCategoryIdProvider);
+
+    // 🚀 SMART CACHING: Only fetch if search/category changed or no data exists
+    if (state.hasValue &&
+        state.value != null &&
+        search == _lastSearch &&
+        categoryId == _lastCategoryId) {
+      return state.value!;
+    }
+
     _page = 1;
     _hasMore = true;
     _isLoadingMore = false;
-
-    final search = ref.watch(searchQueryProvider);
-    final categoryId = ref.watch(selectedCategoryIdProvider);
+    _lastSearch = search;
+    _lastCategoryId = categoryId;
 
     final useCase = ref.watch(getSubCategoriesUseCaseProvider);
     final result = await useCase(
@@ -229,12 +311,21 @@ class SubCategoriesNotifier
       _isLoadingMore = false;
     }
   }
+
+  /// Force refresh data (bypass cache)
+  Future<void> forceRefresh() async {
+    _lastSearch = '';
+    _lastCategoryId = null;
+    ref.invalidateSelf();
+  }
 }
 
 class CoursesNotifier extends AsyncNotifier<PaginatedData<CourseModel>> {
   int _page = 1;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+  String _lastSearch = '';
+  int? _lastSubCategoryId;
 
   bool get hasMore => _hasMore;
   bool get isLoadingMore => _isLoadingMore;
@@ -242,12 +333,22 @@ class CoursesNotifier extends AsyncNotifier<PaginatedData<CourseModel>> {
   @override
   Future<PaginatedData<CourseModel>> build() async {
     ref.keepAlive();
+    final search = ref.watch(searchQueryProvider);
+    final subCategoryId = ref.watch(selectedSubCategoryIdProvider);
+
+    // 🚀 SMART CACHING: Only fetch if search/subcategory changed or no data exists
+    if (state.hasValue &&
+        state.value != null &&
+        search == _lastSearch &&
+        subCategoryId == _lastSubCategoryId) {
+      return state.value!;
+    }
+
     _page = 1;
     _hasMore = true;
     _isLoadingMore = false;
-
-    final search = ref.watch(searchQueryProvider);
-    final subCategoryId = ref.watch(selectedSubCategoryIdProvider);
+    _lastSearch = search;
+    _lastSubCategoryId = subCategoryId;
 
     final useCase = ref.watch(getCoursesUseCaseProvider);
     final result = await useCase(
@@ -296,6 +397,13 @@ class CoursesNotifier extends AsyncNotifier<PaginatedData<CourseModel>> {
     } finally {
       _isLoadingMore = false;
     }
+  }
+
+  /// Force refresh data (bypass cache)
+  Future<void> forceRefresh() async {
+    _lastSearch = '';
+    _lastSubCategoryId = null;
+    ref.invalidateSelf();
   }
 
   /// يحدد الدرس كمكتمل بناءً على نوعه:

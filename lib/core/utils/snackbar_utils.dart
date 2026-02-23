@@ -125,41 +125,84 @@ class AppSnackBar {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: Colors.white,
-              ),
+        padding: EdgeInsets.zero, // نلغي الـ padding الافتراضي للتحكم الكامل
+        content: InkWell(
+          onTap: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
-            const SizedBox(height: 2),
-            Text(
-              body,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.outfit(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.9),
-              ),
+            child: Row(
+              children: [
+                // أيقونة دائرية مميزة للإشعار
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF3B82F6).withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_rounded,
+                    color: Color(0xFF3B82F6),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // محتوى النص
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // سهم صغير للدلالة على إمكانية النقر
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white.withOpacity(0.3),
+                  size: 14,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        action: SnackBarAction(
-          label: 'View',
-          textColor: Colors.yellow,
-          onPressed: onTap,
-        ),
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: const Color(
+          0xFF0F172A,
+        ).withOpacity(0.95), // لون داكن فخم مع شفافية بسيطة
         behavior: SnackBarBehavior.floating,
-        elevation: 10,
+        elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-        duration: const Duration(seconds: 5),
+        margin: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: MediaQuery.of(context).size.height / 2 - 40,
+        ),
+        duration: const Duration(seconds: 6),
       ),
     );
   }

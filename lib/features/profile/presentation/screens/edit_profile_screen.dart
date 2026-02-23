@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yuna/core/constants/app_colors.dart';
-import 'package:yuna/core/constants/app_sizes.dart';
-import 'package:yuna/core/widgets/app_button.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
-import 'package:yuna/features/profile/presentation/providers/profile_provider.dart';
-import 'package:yuna/features/profile/presentation/providers/edit_profile_provider.dart';
+import 'package:sparkbit/core/constants/app_colors.dart';
+import 'package:sparkbit/core/constants/app_sizes.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/features/profile/presentation/providers/profile_provider.dart';
+import 'package:sparkbit/features/profile/presentation/providers/edit_profile_provider.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});

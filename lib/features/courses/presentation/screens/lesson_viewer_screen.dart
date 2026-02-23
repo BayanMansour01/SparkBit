@@ -1,50 +1,93 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
-import 'package:yuna/features/courses/data/models/lesson_model.dart';
-import 'package:yuna/core/widgets/responsive/responsive_center.dart';
+import 'package:sparkbit/features/courses/data/models/lesson_model.dart';
 
 import '../providers/lesson_view_provider.dart';
 import '../widgets/lesson_viewer/lesson_app_bar.dart';
 import '../widgets/lesson_viewer/lesson_content.dart';
 import '../widgets/lesson_viewer/lesson_video_player.dart';
 
-class LessonViewerScreen extends ConsumerWidget {
+class LessonViewerScreen extends ConsumerStatefulWidget {
   final LessonModel lesson;
 
   const LessonViewerScreen({super.key, required this.lesson});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize controller logic
-    final controller = ref.read(lessonViewProvider(lesson).notifier);
+  ConsumerState<LessonViewerScreen> createState() => _LessonViewerScreenState();
+}
 
+class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
+  @override
+  void dispose() {
+    // Always reset system UI when leaving this screen
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = ref.read(lessonViewProvider(widget.lesson).notifier);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // Update system UI based on orientation (after frame)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (isLandscape) {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      } else {
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      }
+    });
+
+    // Single stable ShowCaseWidget - never recreated on orientation change
     return ShowCaseWidget(
       builder: (innerContext) {
-        // Trigger Tips Check
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          controller.checkAndShowTips(innerContext, lesson.hasVideo);
-        });
+        if (!isLandscape) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            controller.checkAndShowTips(innerContext, widget.lesson.hasVideo);
+          });
+        }
 
         return PopScope(
-          canPop: false,
-          onPopInvoked: (didPop) {
-            if (didPop) return;
-            controller.syncAndPop(context);
-          },
+          canPop: true,
+          onPopInvokedWithResult: (didPop, result) {},
           child: Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.surface,
-            appBar: LessonAppBar(lesson: lesson),
-            body: ResponsiveCenter(
-              child: SizedBox.expand(
-                child: Column(
+            backgroundColor: isLandscape
+                ? Colors.black
+                : Theme.of(context).colorScheme.surface,
+            appBar: isLandscape ? null : LessonAppBar(lesson: widget.lesson),
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                // Video height: full screen in landscape, 16:9 ratio in portrait
+                final videoHeight = isLandscape
+                    ? constraints.maxHeight
+                    : constraints.maxWidth * 9 / 16;
+
+                // STABLE TREE: LessonVideoPlayer is ALWAYS at Column[0] > SizedBox
+                // This ensures the WebView is never destroyed on orientation change
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LessonVideoPlayer(lesson: lesson),
-                    LessonContent(lesson: lesson),
+                    SizedBox(
+                      width: constraints.maxWidth,
+                      height: videoHeight,
+                      child: LessonVideoPlayer(lesson: widget.lesson),
+                    ),
+                    if (!isLandscape)
+                      Expanded(child: LessonContent(lesson: widget.lesson)),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ),
         );

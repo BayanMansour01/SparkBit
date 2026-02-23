@@ -2,16 +2,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/constants/app_strings.dart';
+import 'package:sparkbit/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/shimmers/course_list_shimmer.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yuna/core/constants/app_routes.dart';
-import 'package:yuna/features/courses/data/models/course_model.dart';
-import 'package:yuna/features/courses/presentation/providers/courses_provider.dart';
+import 'package:sparkbit/core/constants/app_routes.dart';
+import 'package:sparkbit/features/courses/data/models/course_model.dart';
+import 'package:sparkbit/features/courses/presentation/providers/courses_provider.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
 
 /// Courses screen with filtering and search
@@ -438,8 +438,8 @@ class _CourseCard extends StatelessWidget {
               Hero(
                 tag: 'course_image_${course.id}_courses_screen_$index',
                 child: Container(
-                  width: 100,
-                  height: 100,
+                  width: 78,
+                  height: 78,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -472,7 +472,7 @@ class _CourseCard extends StatelessWidget {
                         ),
                 ),
               ),
-              const SizedBox(width: AppSizes.space16),
+              const SizedBox(width: AppSizes.space12),
 
               // Course Info
               Expanded(
@@ -484,9 +484,10 @@ class _CourseCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
-                        fontSize: AppSizes.fontLg,
+                        fontSize: 17,
                         fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.onSurface,
+                        height: 1.3,
                       ),
                     ),
                     const SizedBox(height: AppSizes.space6),
@@ -499,30 +500,32 @@ class _CourseCard extends StatelessWidget {
                         ).colorScheme.onSurface.withOpacity(0.6),
                       ),
                     ),
-                    const SizedBox(height: AppSizes.space8),
+                    const SizedBox(height: AppSizes.space6),
+                    // Rating & Lessons row
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
                           Icons.star_rounded,
                           size: AppSizes.iconSm,
                           color: Color(0xFFFFC107),
                         ),
-                        const SizedBox(width: AppSizes.space4),
+                        const SizedBox(width: 2),
                         Text(
                           course.avgRating.toString(),
                           style: GoogleFonts.outfit(
                             fontSize: AppSizes.fontXs,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
-                        const SizedBox(width: AppSizes.space12),
+                        const SizedBox(width: 10),
                         const Icon(
                           Icons.play_circle_outline_rounded,
                           size: AppSizes.iconSm,
                           color: AppColors.primary,
                         ),
-                        const SizedBox(width: AppSizes.space4),
+                        const SizedBox(width: 4),
                         Text(
                           '${course.lessonsCount} Lessons',
                           style: GoogleFonts.outfit(
@@ -532,45 +535,48 @@ class _CourseCard extends StatelessWidget {
                             ).colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
-                        const Spacer(),
-                        if (course.isPurchased)
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.space6),
+                    // Price / Progress row — separate line for more title space
+                    if (course.isPurchased)
+                      Row(
+                        children: [
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '${course.completionPercentage}%',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: AppSizes.fontXs,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
-                                  ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(2),
+                              child: LinearProgressIndicator(
+                                value: course.completionPercentage / 100,
+                                backgroundColor: AppColors.primary.withOpacity(
+                                  0.15,
                                 ),
-                                const SizedBox(height: 4),
-                                LinearProgressIndicator(
-                                  value: course.completionPercentage / 100,
-                                  backgroundColor: AppColors.primary
-                                      .withOpacity(0.2),
-                                  color: AppColors.primary,
-                                  minHeight: 4,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ],
+                                color: AppColors.primary,
+                                minHeight: 5,
+                              ),
                             ),
-                          )
-                        else
+                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            course.isFree
-                                ? 'Free'
-                                : AppStrings.formatPrice(course.price),
+                            '${course.completionPercentage}%',
                             style: GoogleFonts.outfit(
-                              fontSize: AppSizes.fontLg,
+                              fontSize: AppSizes.fontXs,
                               fontWeight: FontWeight.bold,
                               color: AppColors.primary,
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                      )
+                    else
+                      Text(
+                        course.isFree
+                            ? 'Free'
+                            : AppStrings.formatPrice(course.price),
+                        style: GoogleFonts.outfit(
+                          fontSize: AppSizes.fontBase,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
                   ],
                 ),
               ),

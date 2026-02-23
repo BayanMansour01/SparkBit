@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../models/user_profile.dart';
 import '../../models/app_constants.dart';
 import '../api_endpoints.dart';
@@ -63,11 +64,51 @@ class StudentApi {
 
   /// Get unread notifications count
   Future<int> getUnreadCount() async {
-    final response = await dio.get(ApiEndpoints.notificationsUnreadCount);
-    final responseData = response.data as Map<String, dynamic>;
-    final data = responseData['data'] as Map<String, dynamic>;
-    final innerData = data['data'] as Map<String, dynamic>;
-    return innerData['unread_count'] as int;
+    try {
+      final response = await dio.get(ApiEndpoints.notificationsUnreadCount);
+      final responseData = response.data as Map<String, dynamic>;
+
+      debugPrint('🔢 Unread Count API Response: $responseData');
+
+      // Try the nested structure first
+      if (responseData.containsKey('data')) {
+        final data = responseData['data'];
+        debugPrint('🔢 Data level: $data');
+
+        // Check if data has another nested 'data' key
+        if (data is Map<String, dynamic> && data.containsKey('data')) {
+          final innerData = data['data'] as Map<String, dynamic>;
+          debugPrint('🔢 Inner data level: $innerData');
+
+          if (innerData.containsKey('unread_count')) {
+            final count = innerData['unread_count'] as int;
+            debugPrint('🔢 Final unread count (nested): $count');
+            return count;
+          }
+        }
+
+        // If not nested, check if unread_count is directly in data
+        if (data is Map<String, dynamic> && data.containsKey('unread_count')) {
+          final count = data['unread_count'] as int;
+          debugPrint('🔢 Final unread count (direct): $count');
+          return count;
+        }
+      }
+
+      // Fallback: check if unread_count is at the root
+      if (responseData.containsKey('unread_count')) {
+        final count = responseData['unread_count'] as int;
+        debugPrint('🔢 Final unread count (root): $count');
+        return count;
+      }
+
+      debugPrint('❌ Could not find unread_count in response structure');
+      return 0;
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error getting unread count: $e');
+      debugPrint('Stack trace: $stackTrace');
+      rethrow;
+    }
   }
 
   /// Get contact methods

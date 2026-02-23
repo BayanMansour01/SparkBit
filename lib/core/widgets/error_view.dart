@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 import '../resources/assets_manager.dart';
 import '../resources/values_manager.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 import '../errors/failure.dart';
 
 class ErrorView extends StatelessWidget {

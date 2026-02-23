@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import 'package:yuna/core/network/models/base_response.dart';
-import 'package:yuna/core/network/models/data_wrapper.dart';
+import 'package:sparkbit/core/network/models/base_response.dart';
+import 'package:sparkbit/core/network/models/data_wrapper.dart';
 import '../../models/app_constants.dart';
 
 part 'constants_api.g.dart';

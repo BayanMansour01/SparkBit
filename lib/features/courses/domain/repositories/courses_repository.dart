@@ -1,4 +1,4 @@
-import 'package:yuna/core/network/models/paginated_data.dart';
+import 'package:sparkbit/core/network/models/paginated_data.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/sub_category_model.dart';
 import '../../data/models/course_model.dart';

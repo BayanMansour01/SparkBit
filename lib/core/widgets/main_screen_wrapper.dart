@@ -26,31 +26,50 @@ class MainScreenWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget content = child;
-
-    if (padding != null) {
-      content = Padding(padding: padding!, child: content);
-    }
+    Widget scrollView;
 
     if (useScroll) {
+      final List<Widget> slivers = [
+        // AppBar as Sliver
+        if (appBar != null) SliverToBoxAdapter(child: appBar!),
+
+        // Main Content as Sliver
+        SliverPadding(
+          padding: padding ?? EdgeInsets.zero,
+          sliver: SliverToBoxAdapter(child: child),
+        ),
+
+        // Bottom Spacing
+        const SliverPadding(
+          padding: EdgeInsets.only(bottom: AppSizes.space100),
+        ),
+      ];
+
+      scrollView = CustomScrollView(
+        physics: onRefresh != null
+            ? const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              )
+            : const BouncingScrollPhysics(),
+        slivers: slivers,
+      );
+
       if (onRefresh != null) {
-        content = RefreshIndicator(
-          onRefresh: onRefresh!,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(
-              parent: BouncingScrollPhysics(),
-            ),
-            padding: const EdgeInsets.only(bottom: AppSizes.space100),
-            child: content,
-          ),
-        );
-      } else {
-        content = SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: AppSizes.space100),
-          child: content,
-        );
+        scrollView = RefreshIndicator(onRefresh: onRefresh!, child: scrollView);
       }
+    } else {
+      // No scroll mode - use Column with Center
+      Widget content = child;
+      if (padding != null) {
+        content = Padding(padding: padding!, child: content);
+      }
+
+      scrollView = Column(
+        children: [
+          if (appBar != null) appBar!,
+          Expanded(child: Center(child: content)),
+        ],
+      );
     }
 
     return Scaffold(
@@ -58,19 +77,7 @@ class MainScreenWrapper extends StatelessWidget {
       body: Stack(
         children: [
           if (showBackground) const _AppBackgroundBlobs(),
-          SafeArea(
-            bottom: false,
-            child: ResponsiveCenter(
-              child: Column(
-                children: [
-                  if (appBar != null) appBar!,
-                  Expanded(
-                    child: Center(child: content),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          SafeArea(bottom: false, child: ResponsiveCenter(child: scrollView)),
         ],
       ),
     );

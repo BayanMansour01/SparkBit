@@ -2,7 +2,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'pagination_model.dart';
 
 part 'paginated_data.freezed.dart';
-part 'paginated_data.g.dart';
 
 @Freezed(genericArgumentFactories: true)
 abstract class PaginatedData<T> with _$PaginatedData<T> {
@@ -14,5 +13,12 @@ abstract class PaginatedData<T> with _$PaginatedData<T> {
   factory PaginatedData.fromJson(
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
-  ) => _$PaginatedDataFromJson(json, fromJsonT);
+  ) {
+    return PaginatedData(
+      data: (json['data'] as List<dynamic>).map(fromJsonT).toList(),
+      pagination: PaginationModel.fromJson(
+        json['pagination'] as Map<String, dynamic>,
+      ),
+    );
+  }
 }

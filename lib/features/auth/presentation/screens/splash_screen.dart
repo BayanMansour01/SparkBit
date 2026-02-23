@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   // Floating code symbols
   final List<_CodeSymbol> _symbols = [];
-  final int _symbolCount = 15; // Optimized count
+  final int _symbolCount = 10; // Optimized count for faster performance
   final List<String> _codeTokens = [
     '{ }',
     '</>',
@@ -59,13 +59,13 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Main sequence controller
     _mainController = AnimationController(
-      duration: const Duration(milliseconds: 2500), // Reduced from 5.5 seconds
+      duration: const Duration(milliseconds: 1500), // Reduced for faster splash
       vsync: this,
     );
 
     // Background loop controller (slow rising bubbles)
     _bgController = AnimationController(
-      duration: const Duration(seconds: 10),
+      duration: const Duration(seconds: 6), // Faster background
       vsync: this,
     )..repeat();
 
@@ -81,10 +81,10 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   void _setupAnimations() {
-    // 1. Setup Letter Animations (Y U N A)
-    const int letterCount = 4;
-    const double startTime = 0.05; // Start earlier
-    const double stagger = 0.1; // Faster stagger
+    // 1. Setup Letter Animations (S P A R K)
+    const int letterCount = 8; // S-p-a-r-k-B-i-t
+    const double startTime = 0.03; // Start earlier
+    const double stagger = 0.06; // Faster stagger for 8 letters
 
     for (int i = 0; i < letterCount; i++) {
       final start = startTime + (i * stagger);
@@ -130,11 +130,11 @@ class _SplashScreenState extends State<SplashScreen>
     }
 
     // 2. Setup Typewriter Animation
-    // Start typing after letters are mostly done (around 0.5)
+    // Start typing after letters are mostly done (around 0.45)
     _typingAnimation = StepTween(begin: 0, end: _subtitleText.length).animate(
       CurvedAnimation(
         parent: _mainController,
-        curve: const Interval(0.5, 0.9, curve: Curves.linear),
+        curve: const Interval(0.45, 0.9, curve: Curves.linear),
       ),
     );
 
@@ -239,10 +239,15 @@ class _SplashScreenState extends State<SplashScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        _buildLetter('Y', 0, primaryColor),
-                        _buildLetter('u', 1, textColor),
-                        _buildLetter('n', 2, textColor),
-                        _buildLetter('a', 3, primaryColor),
+                        _buildLetter('S', 0, primaryColor),
+                        _buildLetter('p', 1, textColor),
+                        _buildLetter('a', 2, textColor),
+                        _buildLetter('r', 3, textColor),
+                        _buildLetter('k', 4, primaryColor),
+                        // const SizedBox(width: 16),
+                        _buildLetter('B', 5, primaryColor),
+                        _buildLetter('i', 6, textColor),
+                        _buildLetter('t', 7, primaryColor),
                       ],
                     ),
                   ),

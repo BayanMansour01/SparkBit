@@ -1,23 +1,77 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:yuna/core/widgets/app_loading_indicator.dart';
+import 'package:sparkbit/core/widgets/app_loading_indicator.dart';
 
 /// JS constants for the player
 const String _cleanPlayerJs = """
-   // CRITICAL: Javascript Spoofing to match Windows User Agent
+   // ===== 1. PLATFORM SPOOFING (Desktop User Agent) =====
    try {
      Object.defineProperty(navigator, 'platform', {get: function(){return 'Win32';}});
      Object.defineProperty(navigator, 'maxTouchPoints', {get: function(){return 0;}}); 
      Object.defineProperty(navigator, 'vendor', {get: function(){return 'Google Inc.';}});
    } catch(e) {}
 
+   // ===== 2. BLOCK CLIPBOARD / SHARE / WINDOW.OPEN =====
+   try {
+     // Block clipboard API (prevents copy link)
+     if (navigator.clipboard) {
+       Object.defineProperty(navigator, 'clipboard', {
+         get: function() {
+           return {
+             writeText: function() { return Promise.reject('blocked'); },
+             write: function() { return Promise.reject('blocked'); },
+             readText: function() { return Promise.resolve(''); },
+             read: function() { return Promise.resolve([]); }
+           };
+         }
+       });
+     }
+     // Block Web Share API
+     if (navigator.share) {
+       navigator.share = function() { return Promise.reject('blocked'); };
+     }
+     if (navigator.canShare) {
+       navigator.canShare = function() { return false; };
+     }
+     // Block window.open (prevent opening video in browser)
+     window.open = function() { return null; };
+   } catch(e) {}
+
+   // ===== 3. BLOCK CONTEXT MENU / TEXT SELECTION / DRAG =====
+   document.addEventListener('contextmenu', function(e) { e.preventDefault(); e.stopPropagation(); return false; }, true);
+   document.addEventListener('selectstart', function(e) { e.preventDefault(); return false; }, true);
+   document.addEventListener('dragstart', function(e) { e.preventDefault(); return false; }, true);
+   document.addEventListener('copy', function(e) { e.preventDefault(); return false; }, true);
+   document.addEventListener('cut', function(e) { e.preventDefault(); return false; }, true);
+
+   // ===== 4. CSS: HIDE ALL YOUTUBE UI THAT COULD EXPOSE VIDEO INFO =====
    function cleanPlayer() {
-     const css = `.ytp-chrome-top, .ytp-youtube-button, .ytp-impression-link, .iv-branding,
-     .ytp-endscreen, .ytp-endscreen-content, .ytp-pause-overlay, .ytp-watermark,
-     .ytp-contextmenu, .ytp-next-button, .ytp-prev-button {
-       display: none !important; visibility: hidden !important;
-     }`;
+     const css = `
+       /* Hide share, watch later, copy link, info, overlays */
+       .ytp-chrome-top, .ytp-youtube-button, .ytp-impression-link, .iv-branding,
+       .ytp-endscreen, .ytp-endscreen-content, .ytp-pause-overlay, .ytp-watermark,
+       .ytp-contextmenu, .ytp-next-button, .ytp-prev-button,
+       .ytp-share-button, .ytp-copylink-button, .ytp-watch-later-button,
+       .ytp-title, .ytp-title-link, .ytp-chrome-top-buttons,
+       .ytp-overflow-menu-item[data-title-no-tooltip="Copy link"],
+       .ytp-overflow-menu-item[data-title-no-tooltip="Share"],
+       .ytp-button[data-tooltip-target-id="ytp-autonav-toggle-button"],
+       .ytp-paid-content-overlay, .ytp-ce-element, .ytp-cards-button,
+       .ytp-cards-teaser, .annotation {
+         display: none !important; visibility: hidden !important;
+         pointer-events: none !important; opacity: 0 !important;
+       }
+       /* Disable text selection globally */
+       * {
+         -webkit-user-select: none !important;
+         -moz-user-select: none !important;
+         -ms-user-select: none !important;
+         user-select: none !important;
+         -webkit-touch-callout: none !important;
+       }
+     `;
      if (!document.getElementById('youtube-cleaner-style')) {
        const style = document.createElement('style');
        style.id = 'youtube-cleaner-style';
@@ -31,24 +85,48 @@ const String _cleanPlayerJs = """
    if (targetNode) { observer.observe(targetNode, { childList: true, subtree: true }); }
    cleanPlayer();
 
+   // ===== 5. BLOCK ALL LINKS + DETECT EMBED ERRORS =====
    function detectEmbedError(){
      try{
        const text = (document.body && document.body.innerText) ? document.body.innerText : '';
        if(text.indexOf('Error 153') !== -1 || text.indexOf('Video player configuration error') !== -1){
          PlayerStatusChannel.postMessage('embed_error');
        }
+       // Block ALL anchor clicks and remove href
        document.querySelectorAll('a').forEach(a=>{
          if(!a.__blocked_by_flutter){
            a.__blocked_by_flutter = true;
-           a.addEventListener('click', function(e){ e.preventDefault(); PlayerStatusChannel.postMessage('blocked_link:'+this.href); }, {passive:false});
+           a.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); PlayerStatusChannel.postMessage('blocked_link:'+this.href); }, {passive:false, capture:true});
+           a.addEventListener('touchend', function(e){ e.preventDefault(); e.stopPropagation(); }, {passive:false, capture:true});
            a.setAttribute('target','_self');
+           a.removeAttribute('href');
          }
+       });
+       // Also block iframes trying to open new windows
+       document.querySelectorAll('iframe').forEach(f=>{
+         try { f.setAttribute('sandbox','allow-scripts allow-same-origin'); } catch(e){}
        });
      }catch(e){}
    }
    setInterval(detectEmbedError, 1000);
    detectEmbedError();
    PlayerStatusChannel.postMessage('ready');
+   
+   // ===== 6. FULLSCREEN DETECTION =====
+   document.addEventListener('fullscreenchange', function() {
+     if (document.fullscreenElement) {
+       FullscreenChannel.postMessage('enter_fullscreen');
+     } else {
+       FullscreenChannel.postMessage('exit_fullscreen');
+     }
+   });
+   document.addEventListener('webkitfullscreenchange', function() {
+     if (document.webkitFullscreenElement) {
+       FullscreenChannel.postMessage('enter_fullscreen');
+     } else {
+       FullscreenChannel.postMessage('exit_fullscreen');
+     }
+   });
 """;
 
 const String _progressTrackerJs = """
@@ -103,16 +181,23 @@ const String _progressTrackerJs = """
 class YouTubePlayerState {
   final bool isPlayerReady;
   final bool embedErrorDetected;
+  final bool isFullscreen;
 
   const YouTubePlayerState({
     this.isPlayerReady = false,
     this.embedErrorDetected = false,
+    this.isFullscreen = false,
   });
 
-  YouTubePlayerState copyWith({bool? isPlayerReady, bool? embedErrorDetected}) {
+  YouTubePlayerState copyWith({
+    bool? isPlayerReady,
+    bool? embedErrorDetected,
+    bool? isFullscreen,
+  }) {
     return YouTubePlayerState(
       isPlayerReady: isPlayerReady ?? this.isPlayerReady,
       embedErrorDetected: embedErrorDetected ?? this.embedErrorDetected,
+      isFullscreen: isFullscreen ?? this.isFullscreen,
     );
   }
 }
@@ -127,6 +212,10 @@ class YouTubePlayerNotifier extends StateNotifier<YouTubePlayerState> {
 
   void setEmbedError() {
     state = state.copyWith(embedErrorDetected: true);
+  }
+
+  void setFullscreen(bool isFullscreen) {
+    state = state.copyWith(isFullscreen: isFullscreen);
   }
 }
 
@@ -163,15 +252,16 @@ final youtubeControllerProvider = Provider.autoDispose.family<WebViewController,
         },
         onNavigationRequest: (NavigationRequest request) {
           final url = request.url;
-          if (url.contains('youtube.com/watch') || url.contains('youtu.be/')) {
-            return NavigationDecision.prevent;
+
+          // Allow only the initial embed URL to load
+          if (url.contains('youtube-nocookie.com/embed/') ||
+              url.contains('youtube.com/embed/') ||
+              url.startsWith('about:blank')) {
+            return NavigationDecision.navigate;
           }
-          final state = ref.read(youtubePlayerProvider(videoId));
-          if (state.embedErrorDetected &&
-              (url.startsWith('http') || url.contains('youtube.com'))) {
-            return NavigationDecision.prevent;
-          }
-          return NavigationDecision.navigate;
+
+          // Block everything else: watch pages, share links, channel pages, etc.
+          return NavigationDecision.prevent;
         },
       ),
     )
@@ -198,10 +288,23 @@ final youtubeControllerProvider = Provider.autoDispose.family<WebViewController,
           } catch (e) {}
         }
       },
+    )
+    ..addJavaScriptChannel(
+      'FullscreenChannel',
+      onMessageReceived: (JavaScriptMessage message) {
+        final msg = message.message;
+        if (msg == 'enter_fullscreen') {
+          ref.read(youtubePlayerProvider(videoId).notifier).setFullscreen(true);
+        } else if (msg == 'exit_fullscreen') {
+          ref
+              .read(youtubePlayerProvider(videoId).notifier)
+              .setFullscreen(false);
+        }
+      },
     );
 
   final String embedUrl =
-      'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&playsinline=1&modestbranding=1&iv_load_policy=3&fs=1&rel=0&origin=https://www.google.com';
+      'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&modestbranding=1&iv_load_policy=3&fs=1&rel=0&origin=https://www.google.com';
 
   final Map<String, String> headers = {
     'User-Agent':
@@ -251,6 +354,25 @@ class YouTubePlayerWidget extends ConsumerWidget {
         onProgress!(next.$1, next.$2);
       });
     }
+
+    // Listen to fullscreen changes → force orientation
+    ref.listen(youtubePlayerProvider(videoId), (previous, next) {
+      if (previous != null && previous.isFullscreen != next.isFullscreen) {
+        if (next.isFullscreen) {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        } else {
+          SystemChrome.setPreferredOrientations([
+            DeviceOrientation.portraitUp,
+            DeviceOrientation.portraitDown,
+            DeviceOrientation.landscapeLeft,
+            DeviceOrientation.landscapeRight,
+          ]);
+        }
+      }
+    });
 
     final webViewController = ref.watch(youtubeControllerProvider(videoId));
     final playerState = ref.watch(youtubePlayerProvider(videoId));

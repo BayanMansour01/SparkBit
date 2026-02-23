@@ -4,16 +4,18 @@ import '../../../../core/constants/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/constants/app_colors.dart';
-import 'package:yuna/core/constants/app_strings.dart';
+import 'package:sparkbit/core/constants/app_colors.dart';
+import 'package:sparkbit/core/constants/app_strings.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
-import 'package:yuna/core/widgets/app_button.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
 import '../providers/order_detail_provider.dart';
 import '../providers/orders_provider.dart';
+import '../../../courses/presentation/providers/courses_provider.dart';
+import '../../../home/presentation/providers/home_provider.dart';
 
 class OrderDetailScreen extends ConsumerStatefulWidget {
   final int orderId;
@@ -65,6 +67,8 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
         return const Color(0xFFF59E0B); // Amber/Orange
       case 'pending':
         return const Color(0xFF3B82F6); // Blue
+      case 'cancelled':
+        return const Color(0xFF9CA3AF); // Gray
       default:
         return Colors.grey;
     }
@@ -76,56 +80,73 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return MainScreenWrapper(
-      appBar: Column(
-        children: [
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: theme.iconTheme.color,
-                  ),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go(AppRoutes.home);
-                    }
-                  },
-                ),
-                Text(
-                  'Enrollment Details',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 20,
-                    color: theme.appBarTheme.foregroundColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-      onRefresh: () async {
-        ref.invalidate(orderDetailProvider(widget.orderId));
-        await ref.read(orderDetailProvider(widget.orderId).future);
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop && orderAsync.hasValue) {
+          final order = orderAsync.value;
+          // Refresh courses if order was approved
+          if (order?.status.value == 'approved') {
+            debugPrint('🔄 Order approved, refreshing courses on pop...');
+            ref.invalidate(myCoursesProvider);
+            ref.invalidate(coursesProvider);
+            ref.invalidate(homeDataProvider);
+            ref.invalidate(homePopularCoursesProvider);
+            ref.invalidate(homeCategoriesProvider);
+          }
+        }
       },
-      child: orderAsync.when(
-        data: (order) => _buildContent(context, order, isDark),
-        error: (error, stack) => ErrorView(
-          error: error.toString(),
-          onRetry: () => ref.refresh(orderDetailProvider(widget.orderId)),
+      child: MainScreenWrapper(
+        appBar: Column(
+          children: [
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: theme.iconTheme.color,
+                    ),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.home);
+                      }
+                    },
+                  ),
+                  Text(
+                    'Enrollment Details',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 20,
+                      color: theme.appBarTheme.foregroundColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 100),
-            child: AppLoadingIndicator(),
+        onRefresh: () async {
+          ref.invalidate(orderDetailProvider(widget.orderId));
+          await ref.read(orderDetailProvider(widget.orderId).future);
+        },
+        child: orderAsync.when(
+          data: (order) => _buildContent(context, order, isDark),
+          error: (error, stack) => ErrorView(
+            error: error.toString(),
+            onRetry: () => ref.refresh(orderDetailProvider(widget.orderId)),
+          ),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 100),
+              child: AppLoadingIndicator(),
+            ),
           ),
         ),
       ),
@@ -346,31 +367,57 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Image.network(
-                  order.paymentProof!,
-                  height: 220,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    height: 220,
-                    color: isDark ? Colors.grey[800] : Colors.grey[50],
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.broken_image_rounded,
-                            color: secondaryTextColor,
-                            size: 40,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Image loading failed',
-                            style: GoogleFonts.outfit(
-                              color: secondaryTextColor,
+                child: InkWell(
+                  onTap: () {
+                    // Show full image in a dialog
+                    showDialog(
+                      context: context,
+                      builder: (_) => Dialog(
+                        child: InteractiveViewer(
+                          child: Image.network(
+                            order.paymentProof!,
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: isDark
+                                  ? Colors.grey[800]
+                                  : Colors.grey[100],
+                              child: Icon(
+                                Icons.image_not_supported_rounded,
+                                color: secondaryTextColor,
+                                size: 40,
+                              ),
                             ),
                           ),
-                        ],
+                        ),
+                      ),
+                    );
+                  },
+                  child: Image.network(
+                    order.paymentProof!,
+                    height: 220,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 220,
+                      color: isDark ? Colors.grey[800] : Colors.grey[50],
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.broken_image_rounded,
+                              color: secondaryTextColor,
+                              size: 40,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Image loading failed',
+                              style: GoogleFonts.outfit(
+                                color: secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -410,93 +457,109 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final item = order.items[index];
-              return Container(
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.03),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        item.course.image,
-                        width: 80,
-                        height: 80,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+              return InkWell(
+                onTap: () {
+                  // Try to find the course in loaded lists
+                  final course = ref.read(courseByIdProvider(item.course.id));
+
+                  if (course != null) {
+                    // Navigate to course details
+                    context.push(AppRoutes.courseDetails, extra: course);
+                  } else {
+                    // Course not in loaded lists, navigate to My Courses
+                    AppSnackBar.showInfo(context, 'Opening your courses...');
+                    context.go(AppRoutes.myCourses);
+                  }
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.03),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: Image.network(
+                          item.course.image,
                           width: 80,
                           height: 80,
-                          color: isDark ? Colors.grey[800] : Colors.grey[100],
-                          child: Icon(
-                            Icons.image_not_supported_rounded,
-                            color: secondaryTextColor,
-                            size: 24,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 80,
+                            height: 80,
+                            color: isDark ? Colors.grey[800] : Colors.grey[100],
+                            child: Icon(
+                              Icons.image_not_supported_rounded,
+                              color: secondaryTextColor,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.course.title,
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: textColor,
-                              height: 1.2,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.course.title,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: textColor,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.person_rounded,
-                                size: 14,
-                                color: secondaryTextColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  item.course.instructor.name,
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 13,
-                                    color: secondaryTextColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_rounded,
+                                  size: 14,
+                                  color: secondaryTextColor,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    item.course.instructor.name,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 13,
+                                      color: secondaryTextColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      AppStrings.formatPrice(item.price),
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        fontSize: 18,
+                      const SizedBox(width: 12),
+                      Text(
+                        AppStrings.formatPrice(item.price),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
+                      const SizedBox(width: 4),
+                    ],
+                  ),
                 ),
               );
             },

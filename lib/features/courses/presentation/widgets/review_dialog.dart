@@ -4,7 +4,7 @@ import '../../../../core/resources/values_manager.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../data/models/add_review_request.dart';
 import '../../domain/usecases/add_review_usecase.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
 
 class ReviewDialog extends StatefulWidget {
   final String lessonId;
@@ -43,7 +43,7 @@ class _ReviewDialogState extends State<ReviewDialog> {
       );
 
       if (mounted) {
-        Navigator.pop(context, true);
+        Navigator.pop(context, _rating); // Return the rating value
         AppSnackBar.showSuccess(context, 'Review submitted successfully');
       }
     } catch (e) {

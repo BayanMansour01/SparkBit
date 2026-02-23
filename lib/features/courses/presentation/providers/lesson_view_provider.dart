@@ -43,12 +43,25 @@ class LessonViewController
 
   @override
   LessonViewState build(LessonModel lesson) {
+    // Initialize state with existing progress from lesson (from API)
+    final initialProgress = lesson.progress ?? 0;
+
     // Final sync and invalidate related data on dispose
     ref.onDispose(() {
       if (!_isUserLoggedIn()) return;
 
-      // 1. Optimistic Updates (Ensure state is reflected in lists)
+      // Get the final progress from state
       final currentP = state.currentProgress;
+
+      // 🔒 CRITICAL: Only save if progress increased (forward-only)
+      // Compare with initial progress from lesson to prevent overwriting higher values
+      if (currentP <= initialProgress) {
+        // Progress didn't increase, skip save and just invalidate
+        _invalidateAll(ref, lesson.courseId);
+        return;
+      }
+
+      // 1. Optimistic Updates (Ensure state is reflected in lists immediately)
       _performOptimisticUpdates(
         lessonId: lesson.id,
         progress: currentP,
@@ -56,7 +69,10 @@ class LessonViewController
       );
 
       // 2. Network Sync (Fire & Forget)
-      if (lesson.hasVideo) {
+      // Only sync if:
+      // - Lesson has video (video lessons track progress)
+      // - Progress increased from initial state
+      if (lesson.hasVideo && currentP > initialProgress) {
         ref
             .read(coursesProvider.notifier)
             .updateLessonProgress(lesson.id, currentP)
@@ -67,7 +83,9 @@ class LessonViewController
         _invalidateAll(ref, lesson.courseId);
       }
     });
-    return const LessonViewState();
+
+    // Return initial state with progress from lesson
+    return LessonViewState(currentProgress: initialProgress);
   }
 
   /// Check if user is logged in (not a guest)
@@ -90,27 +108,28 @@ class LessonViewController
     // Note: HomeData updates automatically as it watches the above providers
   }
 
-  // ... markAsComplete/Incomplete remain same ...
-
-  Future<void> syncAndPop(BuildContext context) async {
-    // Just Close! Logic is handled in onDispose
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
-  }
-
   void updateProgress(double currentPositionRatio, double watchedRatio) {
     // watchedRatio is already (totalWatched / duration) as calculated in JS
     final progress = (watchedRatio * 100).clamp(0, 100).toDouble();
 
-    // 1. Update local state for UI (Progress Bar) - always update locally
+    // ⚠️ FORWARD-ONLY PROGRESS: Don't update if user rewinds the video
+    // This ensures progress always increases, never decreases
+    if (progress < state.currentProgress) {
+      return;
+    }
+
+    // Skip small incremental updates (less than 0.5%) unless reaching 100%
+    // This reduces unnecessary state updates and improves performance
     if ((progress - state.currentProgress).abs() < 0.5 && progress < 100) {
       return;
     }
+
+    // 1. Update local state for UI (Progress Bar, etc.)
     state = state.copyWith(currentProgress: progress);
 
     // 2. Milestone-based Sync Logic (25%, 50%, 75%, 100%)
-    // Only sync to server if user is logged in
+    // Only sync to server at key milestones to reduce API calls
+    // Only sync if user is logged in
     if (!_isUserLoggedIn()) return;
 
     final milestones = [25, 50, 75, 100];
@@ -135,7 +154,8 @@ class LessonViewController
     // Only mark as complete if user is logged in
     if (!_isUserLoggedIn()) return;
 
-    state = state.copyWith(isMarkedComplete: true);
+    // Update state to reflect completion (100% progress)
+    state = state.copyWith(isMarkedComplete: true, currentProgress: 100);
 
     // PERFORM OPTIMISTIC UPDATES
     _performOptimisticUpdates(
@@ -156,7 +176,8 @@ class LessonViewController
     // Only mark as incomplete if user is logged in
     if (!_isUserLoggedIn()) return;
 
-    state = state.copyWith(isMarkedComplete: false);
+    // Update state to reflect incompletion (reset progress)
+    state = state.copyWith(isMarkedComplete: false, currentProgress: 0);
 
     // PERFORM OPTIMISTIC UPDATES
     _performOptimisticUpdates(

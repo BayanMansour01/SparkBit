@@ -3,11 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/constants/app_colors.dart';
-import 'package:yuna/core/constants/app_strings.dart';
-import 'package:yuna/core/widgets/app_loading_indicator.dart';
-import 'package:yuna/core/widgets/app_button.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/constants/app_colors.dart';
+import 'package:sparkbit/core/constants/app_strings.dart';
+import 'package:sparkbit/core/widgets/app_loading_indicator.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
@@ -199,6 +199,8 @@ class _OrderCard extends ConsumerWidget {
         return const Color(0xFFF59E0B); // Orange
       case 'pending':
         return const Color(0xFF3B82F6); // Blue
+      case 'cancelled':
+        return const Color(0xFF9CA3AF); // Gray
       default:
         return Colors.grey;
     }

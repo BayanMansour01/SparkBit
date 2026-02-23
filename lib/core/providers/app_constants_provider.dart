@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yuna/core/di/service_locator.dart';
-import 'package:yuna/core/models/app_constants.dart';
-import 'package:yuna/core/models/constant_value.dart';
-import 'package:yuna/core/repositories/app_constants_repository.dart';
+import 'package:sparkbit/core/di/service_locator.dart';
+import 'package:sparkbit/core/models/app_constants.dart';
+import 'package:sparkbit/core/models/constant_value.dart';
+import 'package:sparkbit/core/repositories/app_constants_repository.dart';
 
 final appConstantsProvider =
     AsyncNotifierProvider<AppConstantsNotifier, AppConstants?>(() {
@@ -42,7 +42,7 @@ class AppConstantsNotifier extends AsyncNotifier<AppConstants?> {
 // Helper extensions for easier access from the UI
 extension AppConstantsHelper on AppConstants {
   List<ConstantValue> get userStatusOptions => userStatuses;
-  List<ConstantValue> get paymentStatusOptions => paymentStatuses;
+  List<ConstantValue> get orderStatusOptions => orderStatuses;
   List<ConstantValue> get userRoleOptions => userRoles;
   List<ConstantValue> get activityStatusOptions => activityStatuses;
 }

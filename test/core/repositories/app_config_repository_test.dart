@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yuna/core/models/app_config.dart';
-import 'package:yuna/core/network/api/app_config_api.dart';
-import 'package:yuna/core/repositories/app_config_repository.dart';
+import 'package:sparkbit/core/models/app_config.dart';
+import 'package:sparkbit/core/network/api/app_config_api.dart';
+import 'package:sparkbit/core/repositories/app_config_repository.dart';
 // Note: We are using a manual Mock (Fake) because build_runner is currently having issues.
 // This achieves the same goal without needing code generation.
 

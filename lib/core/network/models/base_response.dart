@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'base_response.freezed.dart';
-part 'base_response.g.dart';
 
 @Freezed(genericArgumentFactories: true)
 abstract class BaseResponse<T> with _$BaseResponse<T> {
@@ -15,5 +14,12 @@ abstract class BaseResponse<T> with _$BaseResponse<T> {
   factory BaseResponse.fromJson(
     Map<String, dynamic> json,
     T Function(Object? json) fromJsonT,
-  ) => _$BaseResponseFromJson(json, fromJsonT);
+  ) {
+    return BaseResponse(
+      success: json['success'] as bool,
+      message: json['message'] as String,
+      data: json['data'] == null ? null : fromJsonT(json['data']),
+      code: (json['code'] as num).toInt(),
+    );
+  }
 }

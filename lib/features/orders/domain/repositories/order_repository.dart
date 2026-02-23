@@ -1,4 +1,4 @@
-import 'package:yuna/core/network/models/paginated_data.dart';
+import 'package:sparkbit/core/network/models/paginated_data.dart';
 import '../../data/models/order_model.dart';
 
 abstract class OrderRepository {

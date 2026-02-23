@@ -18,6 +18,9 @@ class AppRoutes {
   static const String myCourses = '/my-courses';
   static const String profile = '/profile';
 
+  static const String cartPath = '/cart';
+  static const String cartName = 'cart';
+ 
   // Home Sub-Routes (relative paths)
   static const String categories = 'categories';
   static const String subCategories = 'sub-categories';

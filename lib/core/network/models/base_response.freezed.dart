@@ -11,7 +11,6 @@ part of 'base_response.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
-
 /// @nodoc
 mixin _$BaseResponse<T> {
 
@@ -22,8 +21,6 @@ mixin _$BaseResponse<T> {
 @pragma('vm:prefer-inline')
 $BaseResponseCopyWith<T, BaseResponse<T>> get copyWith => _$BaseResponseCopyWithImpl<T, BaseResponse<T>>(this as BaseResponse<T>, _$identity);
 
-  /// Serializes this BaseResponse to a JSON map.
-  Map<String, dynamic> toJson(Object? Function(T) toJsonT);
 
 
 @override
@@ -31,7 +28,7 @@ bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is BaseResponse<T>&&(identical(other.success, success) || other.success == success)&&(identical(other.message, message) || other.message == message)&&const DeepCollectionEquality().equals(other.data, data)&&(identical(other.code, code) || other.code == code));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,success,message,const DeepCollectionEquality().hash(data),code);
 
@@ -209,11 +206,11 @@ return $default(_that.success,_that.message,_that.data,_that.code);case _:
 }
 
 /// @nodoc
-@JsonSerializable(genericArgumentFactories: true)
+
 
 class _BaseResponse<T> implements BaseResponse<T> {
   const _BaseResponse({required this.success, required this.message, this.data, required this.code});
-  factory _BaseResponse.fromJson(Map<String, dynamic> json,T Function(Object?) fromJsonT) => _$BaseResponseFromJson(json,fromJsonT);
+  
 
 @override final  bool success;
 @override final  String message;
@@ -226,17 +223,14 @@ class _BaseResponse<T> implements BaseResponse<T> {
 @pragma('vm:prefer-inline')
 _$BaseResponseCopyWith<T, _BaseResponse<T>> get copyWith => __$BaseResponseCopyWithImpl<T, _BaseResponse<T>>(this, _$identity);
 
-@override
-Map<String, dynamic> toJson(Object? Function(T) toJsonT) {
-  return _$BaseResponseToJson<T>(this, toJsonT);
-}
+
 
 @override
 bool operator ==(Object other) {
   return identical(this, other) || (other.runtimeType == runtimeType&&other is _BaseResponse<T>&&(identical(other.success, success) || other.success == success)&&(identical(other.message, message) || other.message == message)&&const DeepCollectionEquality().equals(other.data, data)&&(identical(other.code, code) || other.code == code));
 }
 
-@JsonKey(includeFromJson: false, includeToJson: false)
+
 @override
 int get hashCode => Object.hash(runtimeType,success,message,const DeepCollectionEquality().hash(data),code);
 

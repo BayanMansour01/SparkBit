@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0D1321</color>
+    <!-- Notification accent color — matches AppColors.primary -->
+    <color name="notification_color">#D4A84B</color>
 </resources>

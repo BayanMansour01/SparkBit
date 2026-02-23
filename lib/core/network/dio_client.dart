@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yuna/core/network/api_endpoints.dart';
+import 'package:sparkbit/core/network/api_endpoints.dart';
 import '../services/logger_service.dart';
 
 /// Dio client configuration
@@ -19,7 +19,7 @@ class DioClient {
       ),
     );
 
-    // Authentication Interceptor
+    // Authentication Interceptor — attaches token to every request
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
@@ -27,10 +27,24 @@ class DioClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
-          // Use hardcoded token if missing? User showed explicit token in previous context, but likely wants dynamic now.
-          // If user provided a token in DioClient previously, maybe it was for testing.
-          // I'll stick to dynamic.
           return handler.next(options);
+        },
+      ),
+    );
+
+    // 401 Auto-Logout Interceptor
+    // If any API returns 401 (Unauthorized / token expired), clear the local
+    // session so that all providers reload without a token → guest/login state.
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onError: (DioException e, handler) async {
+          if (e.response?.statusCode == 401) {
+            LoggerService.logToFile(
+              '🔐 [401] Token expired or invalid — clearing local session',
+            );
+            await prefs.remove('access_token');
+          }
+          return handler.next(e);
         },
       ),
     );

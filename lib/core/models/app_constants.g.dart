@@ -17,7 +17,7 @@ _AppConstants _$AppConstantsFromJson(Map<String, dynamic> json) =>
       activityStatuses: (json['activity_statuses'] as List<dynamic>)
           .map((e) => ConstantValue.fromJson(e as Map<String, dynamic>))
           .toList(),
-      paymentStatuses: (json['payment_statuses'] as List<dynamic>)
+      orderStatuses: (json['order_statuses'] as List<dynamic>)
           .map((e) => ConstantValue.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
@@ -27,5 +27,5 @@ Map<String, dynamic> _$AppConstantsToJson(_AppConstants instance) =>
       'user_roles': instance.userRoles,
       'user_statuses': instance.userStatuses,
       'activity_statuses': instance.activityStatuses,
-      'payment_statuses': instance.paymentStatuses,
+      'order_statuses': instance.orderStatuses,
     };

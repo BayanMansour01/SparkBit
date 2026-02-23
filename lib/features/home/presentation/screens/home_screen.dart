@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/constants/app_strings.dart';
+import 'package:sparkbit/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/models/user_profile.dart';
@@ -38,8 +38,8 @@ class HomeScreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(homeDataProvider);
             ref.invalidate(userProfileProvider);
-            ref.invalidate(coursesProvider);
-            ref.invalidate(categoriesProvider);
+            ref.invalidate(homePopularCoursesProvider);
+            ref.invalidate(homeCategoriesProvider);
             ref.invalidate(myCoursesProvider);
             await ref.read(homeDataProvider.future);
           },
@@ -61,19 +61,38 @@ class HomeScreen extends ConsumerWidget {
                     child: _buildSectionHeader(
                       context,
                       'Continue Learning',
-                      () => context.push(AppRoutes.myCourses),
+                      () => context.go(AppRoutes.myCourses),
                     ),
                   ),
                   const SizedBox(height: AppSizes.space16),
                   Builder(
                     builder: (context) {
-                      // Find first purchased course
-                      final purchasedCourse = homeData.myCourses.firstWhere(
-                        (c) => c.isPurchased,
-                        orElse: () => homeData.myCourses.first,
-                      );
+                      // Find course with highest progress (completion percentage)
+                      // If multiple courses have same progress, pick the newest (highest ID)
+                      final purchasedCourses = homeData.myCourses
+                          .where((c) => c.isPurchased)
+                          .toList();
 
-                      return _ContinueLearningSection(course: purchasedCourse);
+                      if (purchasedCourses.isEmpty) {
+                        // Fallback to first course if no purchased courses
+                        return _ContinueLearningSection(
+                          course: homeData.myCourses.first,
+                        );
+                      }
+
+                      // Sort by completion percentage (descending), then by ID (descending)
+                      purchasedCourses.sort((a, b) {
+                        final progressComparison = b.completionPercentage
+                            .compareTo(a.completionPercentage);
+                        if (progressComparison != 0) {
+                          return progressComparison; // Higher progress first
+                        }
+                        return b.id.compareTo(a.id); // Newer (higher ID) first
+                      });
+
+                      return _ContinueLearningSection(
+                        course: purchasedCourses.first,
+                      );
                     },
                   ),
                 ],
@@ -111,8 +130,10 @@ class HomeScreen extends ConsumerWidget {
           ),
         );
       },
-      loading: () =>
-          const MainScreenWrapper(child: Center(child: AppLoadingIndicator())),
+      loading: () => const MainScreenWrapper(
+        useScroll: false,
+        child: Center(child: AppLoadingIndicator()),
+      ),
       error: (err, stack) => MainScreenWrapper(
         child: ErrorView(
           error: err,
@@ -411,7 +432,7 @@ class _PopularCoursesList extends StatelessWidget {
       );
     }
     return SizedBox(
-      height: 280,
+      height: 295,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -546,7 +567,7 @@ class _PopularCourseCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      width: 240,
+      width: 270,
       decoration: BoxDecoration(
         color: isDark
             ? Theme.of(
@@ -680,10 +701,10 @@ class _PopularCourseCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
-                      fontSize: 15, // Consistent with ContinueLearning
+                      fontSize: 15.5,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
-                      height: 1.25,
+                      height: 1.3,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -899,13 +920,13 @@ class _ContinueLearningSection extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         course.title,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.onSurface,
-                          height: 1.2,
+                          height: 1.3,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -992,6 +1013,13 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
   Widget build(BuildContext context) {
     final unreadCountAsync = ref.watch(unreadNotificationsCountProvider);
 
+    debugPrint(
+      '🔔 Notification bell - hasValue: ${unreadCountAsync.hasValue}, '
+      'hasError: ${unreadCountAsync.hasError}, '
+      'isLoading: ${unreadCountAsync.isLoading}, '
+      'valueOrNull: ${unreadCountAsync.valueOrNull}',
+    );
+
     return InkWell(
       onTap: () {
         context.push(AppRoutes.notifications).then((_) {
@@ -1010,6 +1038,35 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
               size: 28,
               color: Theme.of(context).colorScheme.onSurface,
             ),
+            // Show error indicator if there's an error (for debugging)
+            if (unreadCountAsync.hasError)
+              Positioned(
+                top: -2,
+                right: -2,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                      width: 1.5,
+                    ),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 10,
+                    ),
+                  ),
+                ),
+              ),
+            // Show the actual badge if we have data
             if (unreadCountAsync.valueOrNull != null &&
                 unreadCountAsync.value! > 0)
               Positioned(

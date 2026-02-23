@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yuna/features/orders/presentation/screens/orders_screen.dart';
+import 'package:sparkbit/features/cart/presentation/screens/cart_screen.dart';
+import 'package:sparkbit/features/orders/presentation/screens/orders_screen.dart';
 import '../core/constants/app_routes.dart';
 import '../features/orders/presentation/screens/order_detail_screen.dart';
 import '../features/auth/presentation/screens/splash_screen.dart';
@@ -240,6 +241,29 @@ class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) =>
             LessonViewerScreen(lesson: state.extra as LessonModel),
+      ),
+      GoRoute(
+        path: AppRoutes.cartPath,
+        name: AppRoutes.cartName,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const CartScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            // حركة انزلاق من الأسفل للأعلى (مثل التطبيقات الاحترافية)
+            const begin = Offset(0.0, 1.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+            var tween = Tween(
+              begin: begin,
+              end: end,
+            ).chain(CurveTween(curve: curve));
+
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
       ),
     ],
 

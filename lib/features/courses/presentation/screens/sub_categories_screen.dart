@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -310,17 +311,28 @@ class _SubCategoryCard extends StatelessWidget {
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.grid_view_rounded, // Placeholder icon
-                    size: 40,
-                    color: color,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppSizes.radiusXl),
                   ),
-                  // If image_url exists and is valid, use it:
-                  // child: ClipRRect(
-                  //   borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXl)),
-                  //   child: Image.network(subCategory.imageUrl, fit: BoxFit.cover),
-                  // ),
+                  child: CachedNetworkImage(
+                    imageUrl: subCategory.imageUrl,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Center(
+                      child: Icon(
+                        Icons.grid_view_rounded,
+                        size: 40,
+                        color: color,
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Center(
+                      child: Icon(
+                        Icons.grid_view_rounded,
+                        size: 40,
+                        color: color,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -338,7 +350,7 @@ class _SubCategoryCard extends StatelessWidget {
                     Flexible(
                       child: Text(
                         subCategory.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
                           fontSize: AppSizes.fontMd,
@@ -349,11 +361,15 @@ class _SubCategoryCard extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSizes.space4),
                     Text(
-                      'Explore',
+                      subCategory.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
                         fontSize: AppSizes.fontXs,
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w500,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.5),
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],

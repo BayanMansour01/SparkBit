@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import '../../../../core/constants/app_routes.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 import '../../../courses/data/models/course_model.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../providers/cart_provider.dart';

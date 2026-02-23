@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../providers/auth_provider.dart';
@@ -12,7 +12,7 @@ import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../courses/presentation/providers/courses_provider.dart';
 import '../../../home/presentation/providers/home_provider.dart';
-import 'package:yuna/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_button.dart';
 
 /// Sign In screen matching the premium design
 class SignInScreen extends ConsumerWidget {

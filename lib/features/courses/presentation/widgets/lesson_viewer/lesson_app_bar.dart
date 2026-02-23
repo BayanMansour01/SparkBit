@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:google_fonts/google_fonts.dart';
-import 'package:yuna/core/constants/app_colors.dart';
-import 'package:yuna/features/courses/data/models/lesson_model.dart';
-import 'package:yuna/features/courses/presentation/providers/lesson_view_provider.dart';
-import 'package:yuna/features/courses/presentation/widgets/review_dialog.dart';
-import 'package:yuna/features/contact_us/presentation/screens/contact_us_screen.dart';
+import 'package:sparkbit/core/constants/app_colors.dart';
+import 'package:sparkbit/features/courses/data/models/lesson_model.dart';
+import 'package:sparkbit/features/courses/presentation/providers/lesson_view_provider.dart';
+import 'package:sparkbit/features/courses/presentation/providers/courses_provider.dart';
+import 'package:sparkbit/features/courses/presentation/widgets/review_dialog.dart';
+import 'package:sparkbit/features/home/presentation/providers/home_provider.dart';
 
 class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final LessonModel lesson;
@@ -28,28 +29,31 @@ class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
       bottom: null,
       leading: IconButton(
         icon: const Icon(Icons.close_rounded),
-        onPressed: () => controller.syncAndPop(context),
+        onPressed: () => Navigator.of(context).pop(),
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.support_agent_rounded),
-          tooltip: 'Contact Support',
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ContactUsScreen()),
-            );
-          },
-        ),
-        IconButton(
           icon: const Icon(Icons.star_rate_rounded, color: Colors.amber),
           tooltip: 'Rate Lesson',
-          onPressed: () {
-            showDialog(
+          onPressed: () async {
+            final result = await showDialog<int>(
               context: context,
               builder: (context) =>
                   ReviewDialog(lessonId: lesson.id.toString()),
             );
+            if (result != null) {
+              // 1. Optimistic update: update lesson rating locally
+              ref
+                  .read(lessonsProvider(lesson.courseId).notifier)
+                  .updateLessonRating(lesson.id, result.toDouble());
+
+              // 2. Refresh all relevant API data in background
+              ref.read(lessonsProvider(lesson.courseId).notifier).refreshData();
+              ref.read(coursesProvider.notifier).refreshData();
+              ref.read(myCoursesProvider.notifier).refreshData();
+              ref.invalidate(homeDataProvider);
+              ref.invalidate(homePopularCoursesProvider);
+            }
           },
         ),
         // File Only: Show Completion Button

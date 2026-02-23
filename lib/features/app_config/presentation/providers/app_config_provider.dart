@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../data/models/app_config_model.dart';
@@ -32,37 +33,39 @@ final currentAppVersionProvider = FutureProvider<String>((ref) async {
   final packageInfo = await PackageInfo.fromPlatform();
   return packageInfo.version;
 });
-
-/// Provider to check if update is required
 final updateRequiredProvider = FutureProvider<bool>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
   final currentVersion = await ref.watch(currentAppVersionProvider.future);
 
-  if (config.forceUpdate) {
-    return _isVersionLower(currentVersion, config.minVersion);
-  }
-
-  return false;
+  // بما أن الـ getter غير موجود، سنقوم بالمقارنة مباشرة
+  // أو يمكنك وضع شرط منطقي خاص بك هنا
+  return _isVersionLower(currentVersion, config.minVersion);
 });
+
+/// دالة مساعدة لمقارنة الإصدارات بشكل آمن (تتعامل مع 1.0.0 و "1" و 1.2)
+bool _isVersionLower(String current, String min) {
+  try {
+    // تنظيف النصوص من أي رموز غير رقمية باستثناء النقاط
+    final v1 = current.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+    final v2 = min.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+
+    // المقارنة السلسة لكل جزء من أجزاء الإصدار (Major.Minor.Patch)
+    for (var i = 0; i < v2.length; i++) {
+      int v1Part = i < v1.length ? v1[i] : 0;
+      int v2Part = v2[i];
+
+      if (v1Part < v2Part) return true;
+      if (v1Part > v2Part) return false;
+    }
+  } catch (e) {
+    debugPrint('Error comparing versions: $e');
+  }
+  return false;
+}
 
 /// Provider to check if app is in maintenance mode
 final maintenanceModeProvider = FutureProvider<bool>((ref) async {
   final config = await ref.watch(appConfigProvider.future);
+  debugPrint('Maintenance mode: ${config.isMaintenance}');
   return config.isMaintenance;
 });
-
-/// Check if version1 is lower than version2
-bool _isVersionLower(String version1, String version2) {
-  final v1Parts = version1.split('.').map(int.parse).toList();
-  final v2Parts = version2.split('.').map(int.parse).toList();
-
-  for (int i = 0; i < 3; i++) {
-    final v1Part = i < v1Parts.length ? v1Parts[i] : 0;
-    final v2Part = i < v2Parts.length ? v2Parts[i] : 0;
-
-    if (v1Part < v2Part) return true;
-    if (v1Part > v2Part) return false;
-  }
-
-  return false;
-}

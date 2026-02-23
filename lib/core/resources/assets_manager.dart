@@ -6,7 +6,7 @@
 library;
 
 class AppImages {
-  // static const String logo = 'assets/Logo.png';
+  // static const String logo = 'assets/Logo2.png';
 }
 
 class AppLotties {
