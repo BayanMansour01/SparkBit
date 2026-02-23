@@ -1,11 +1,12 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:developer';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:sparkbit/core/services/notification_navigator.dart';
 
 class FirebaseMessagingService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
 
   Future<void> initialize() async {
-    // Request permission for notifications (required for iOS & Android 13+)
+    // Request permission
     NotificationSettings settings = await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -13,25 +14,66 @@ class FirebaseMessagingService {
     );
 
     if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      log('User granted permission');
+      log('✅ FCM: User granted permission');
     } else if (settings.authorizationStatus ==
         AuthorizationStatus.provisional) {
-      log('User granted provisional permission');
+      log('⚠️ FCM: User granted provisional permission');
     } else {
-      log('User declined or has not accepted permission');
+      log('❌ FCM: User declined or has not accepted permission');
     }
 
-    // Always subscribe to general topic for all users (guests included)
+    // Subscribe to general topic for all users
     await subscribeToTopic('general');
+
+    // ─────────────────────────────────────────────────────────────
+    // FOREGROUND: App is open — message arrives but no system tray notification
+    // We handle navigation manually here
+    // ─────────────────────────────────────────────────────────────
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      log(
+        '📬 FCM [Foreground] title=${message.notification?.title} data=${message.data}',
+      );
+      _handleNavigation(message.data);
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // BACKGROUND → FOREGROUND: User tapped the notification from system tray
+    // ─────────────────────────────────────────────────────────────
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      log(
+        '📬 FCM [Background→Foreground] title=${message.notification?.title} data=${message.data}',
+      );
+      _handleNavigation(message.data);
+    });
+
+    // ─────────────────────────────────────────────────────────────
+    // TERMINATED: App was closed — user tapped notification to open app
+    // ─────────────────────────────────────────────────────────────
+    final initialMessage = await _firebaseMessaging.getInitialMessage();
+    if (initialMessage != null) {
+      log(
+        '📬 FCM [Terminated] title=${initialMessage.notification?.title} data=${initialMessage.data}',
+      );
+      // Small delay to ensure router is ready
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleNavigation(initialMessage.data);
+      });
+    }
+  }
+
+  /// Delegates navigation to the central NotificationNavigator
+  void _handleNavigation(Map<String, dynamic> data) {
+    final type = data['type'] as String?;
+    NotificationNavigator.navigate(notificationType: type, data: data);
   }
 
   Future<String?> getToken() async {
     try {
-      String? token = await _firebaseMessaging.getToken();
-      log('FCM Token: $token');
+      final token = await _firebaseMessaging.getToken();
+      log('🔑 FCM Token: $token');
       return token;
     } catch (e) {
-      log('Error getting FCM token: $e');
+      log('❌ Error getting FCM token: $e');
       return null;
     }
   }
@@ -41,18 +83,18 @@ class FirebaseMessagingService {
   Future<void> subscribeToTopic(String topic) async {
     try {
       await _firebaseMessaging.subscribeToTopic(topic);
-      log('Subscribed to topic: $topic');
+      log('📡 Subscribed to topic: $topic');
     } catch (e) {
-      log('Error subscribing to topic $topic: $e');
+      log('❌ Error subscribing to topic $topic: $e');
     }
   }
 
   Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
-      log('Unsubscribed from topic: $topic');
+      log('📡 Unsubscribed from topic: $topic');
     } catch (e) {
-      log('Error unsubscribing from topic $topic: $e');
+      log('❌ Error unsubscribing from topic $topic: $e');
     }
   }
 }
