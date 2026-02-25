@@ -234,7 +234,7 @@ class _OverviewTab extends StatelessWidget {
         children: [
           _SectionTitle(title: 'Description'),
           const SizedBox(height: 10),
-          Linkify(
+          SelectableLinkify(
             onOpen: (link) async {
               final uri = Uri.parse(link.url);
               if (await canLaunchUrl(uri)) {
@@ -252,9 +252,11 @@ class _OverviewTab extends StatelessWidget {
               height: 1.6,
               color: AppColors.primary,
               decoration: TextDecoration.underline,
+              decorationColor: AppColors.primary,
+              decorationThickness: 1.5,
               fontWeight: FontWeight.w600,
             ),
-            options: const LinkifyOptions(humanize: false, removeWww: false),
+            options: const LinkifyOptions(humanize: true, removeWww: false),
           ),
           const SizedBox(height: 30),
           _SectionTitle(title: 'Course Stats'),
@@ -682,7 +684,47 @@ class _BottomEnrollBar extends ConsumerWidget {
           child: AppButton(
             text: 'Continue Learning',
             onPressed: () {
-              DefaultTabController.of(context).animateTo(1);
+              final lessonsAsync = ref.read(lessonsProvider(course.id));
+              final lessons = lessonsAsync.valueOrNull?.data;
+
+              if (lessons == null || lessons.isEmpty) {
+                // Lessons not loaded yet, just switch to tab
+                DefaultTabController.of(context).animateTo(1);
+                return;
+              }
+
+              // 1. Find in-progress lesson (has progress but not completed)
+              final inProgress = lessons
+                  .where(
+                    (l) =>
+                        l.canAccess &&
+                        (l.progress ?? 0) > 0 &&
+                        l.isCompleted != true,
+                  )
+                  .toList();
+
+              // 2. Find first uncompleted accessible lesson
+              final firstUncompleted = lessons
+                  .where((l) => l.canAccess && l.isCompleted != true)
+                  .toList();
+
+              // 3. All completed — take the last accessible lesson
+              final lastAccessible = lessons.where((l) => l.canAccess).toList();
+
+              final LessonModel? target = inProgress.isNotEmpty
+                  ? inProgress.first
+                  : firstUncompleted.isNotEmpty
+                  ? firstUncompleted.first
+                  : lastAccessible.isNotEmpty
+                  ? lastAccessible.last
+                  : null;
+
+              if (target != null) {
+                context.push(AppRoutes.lessonViewer, extra: target);
+              } else {
+                // No accessible lesson, switch to tab
+                DefaultTabController.of(context).animateTo(1);
+              }
             },
           ),
         ),

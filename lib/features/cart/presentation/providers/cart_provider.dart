@@ -5,6 +5,7 @@ import '../../../courses/data/models/course_model.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../../../features/orders/data/models/order_model.dart';
 import '../../../../features/orders/domain/repositories/order_repository.dart';
+import 'package:sparkbit/features/orders/presentation/providers/orders_provider.dart';
 
 // Cart State
 class CartState {
@@ -25,12 +26,14 @@ class CartState {
     bool? isLoading,
     String? error,
     OrderModel? lastOrder,
+    bool clearLastOrder =
+        false, // Sentinel flag to explicitly null out lastOrder
   }) {
     return CartState(
       items: items ?? this.items,
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      lastOrder: lastOrder ?? this.lastOrder,
+      lastOrder: clearLastOrder ? null : (lastOrder ?? this.lastOrder),
     );
   }
 
@@ -54,8 +57,9 @@ class CartState {
 // Cart Notifier
 class CartNotifier extends StateNotifier<CartState> {
   final OrderRepository _orderRepository;
+  final Ref _ref;
 
-  CartNotifier(this._orderRepository) : super(CartState());
+  CartNotifier(this._orderRepository, this._ref) : super(CartState());
 
   // Add course to cart
   void addToCart(CourseModel course) {
@@ -83,7 +87,11 @@ class CartNotifier extends StateNotifier<CartState> {
       addedAt: DateTime.now(),
     );
 
-    state = state.copyWith(items: [...state.items, newItem], error: null);
+    state = state.copyWith(
+      items: [...state.items, newItem],
+      error: null,
+      lastOrder: null, // Reset lastOrder when adding new items
+    );
   }
 
   // Remove course from cart
@@ -113,6 +121,9 @@ class CartNotifier extends StateNotifier<CartState> {
 
       final response = await _orderRepository.createOrder(courseIds);
 
+      // Refresh orders list
+      _ref.invalidate(ordersProvider);
+
       state = state.copyWith(
         isLoading: false,
         lastOrder: response,
@@ -126,10 +137,15 @@ class CartNotifier extends StateNotifier<CartState> {
           errorMessage = e.response?.data['message'];
         }
       }
-      state = state.copyWith(isLoading: false, error: errorMessage);
+      state = state.copyWith(
+        isLoading: false,
+        items: [], // Clear cart even on failure as requested
+        error: errorMessage,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
+        items: [], // Clear cart even on failure as requested
         error: 'Unexpected error occurred',
       );
     }
@@ -140,16 +156,21 @@ class CartNotifier extends StateNotifier<CartState> {
     state = state.copyWith(error: null);
   }
 
-  // Clear last order
+  // Clear last order (uses sentinel flag to allow setting to null)
   void clearLastOrder() {
-    state = state.copyWith(lastOrder: null);
+    state = state.copyWith(clearLastOrder: true);
+  }
+
+  // Full reset: clears items + lastOrder + error
+  void resetCart() {
+    state = CartState(); // Back to fresh initial state
   }
 }
 
 // Cart Provider
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
   final orderRepository = getIt<OrderRepository>();
-  return CartNotifier(orderRepository);
+  return CartNotifier(orderRepository, ref);
 });
 
 // Helper providers
