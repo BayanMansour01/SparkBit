@@ -18,6 +18,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../providers/profile_provider.dart';
 import '../../../../core/widgets/app_profile_avatar.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
+import '../../../../core/widgets/exit_confirm_wrapper.dart';
 
 /// Profile screen with user info and settings
 /// Refactored to be Stateless (Clean Architecture)
@@ -26,21 +27,23 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MainScreenWrapper(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0.0, end: 1.0),
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeOut,
-        builder: (context, opacity, child) {
-          return Opacity(opacity: opacity, child: child);
-        },
-        child: Column(
-          children: [
-            const SizedBox(height: AppSizes.paddingLg),
-            _buildHeader(context, ref),
-            const SizedBox(height: AppSizes.space24),
-            _buildSettings(context, ref),
-          ],
+    return ExitConfirmWrapper(
+      child: MainScreenWrapper(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 800),
+          curve: Curves.easeOut,
+          builder: (context, opacity, child) {
+            return Opacity(opacity: opacity, child: child);
+          },
+          child: Column(
+            children: [
+              const SizedBox(height: AppSizes.paddingLg),
+              _buildHeader(context, ref),
+              const SizedBox(height: AppSizes.space24),
+              _buildSettings(context, ref),
+            ],
+          ),
         ),
       ),
     );

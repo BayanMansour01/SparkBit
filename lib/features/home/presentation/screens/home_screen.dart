@@ -20,6 +20,7 @@ import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../../core/widgets/app_profile_avatar.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
+import '../../../../core/widgets/exit_confirm_wrapper.dart';
 
 /// Home screen with premium UI and animations
 /// Refactored to Stateless ConsumerWidget
@@ -31,28 +32,74 @@ class HomeScreen extends ConsumerWidget {
     // Watch aggregated data provider
     final homeDataAsync = ref.watch(homeDataProvider);
 
-    return homeDataAsync.when(
-      data: (homeData) {
-        return MainScreenWrapper(
-          appBar: _buildAppBar(context, homeData.userProfile),
-          onRefresh: () async {
-            ref.invalidate(homeDataProvider);
-            ref.invalidate(userProfileProvider);
-            ref.invalidate(homePopularCoursesProvider);
-            ref.invalidate(homeCategoriesProvider);
-            ref.invalidate(myCoursesProvider);
-            await ref.read(homeDataProvider.future);
-          },
-          child: _FadeSlideContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSizes.space16),
-                _buildSearchBar(context),
+    return ExitConfirmWrapper(
+      child: homeDataAsync.when(
+        data: (homeData) {
+          return MainScreenWrapper(
+            appBar: _buildAppBar(context, homeData.userProfile),
+            onRefresh: () async {
+              ref.invalidate(homeDataProvider);
+              ref.invalidate(userProfileProvider);
+              ref.invalidate(homePopularCoursesProvider);
+              ref.invalidate(homeCategoriesProvider);
+              ref.invalidate(myCoursesProvider);
+              await ref.read(homeDataProvider.future);
+            },
+            child: _FadeSlideContent(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSizes.space16),
+                  _buildSearchBar(context),
 
-                // Continue Learning Section (only for logged-in users with courses)
-                if (homeData.userProfile.id != -1 &&
-                    homeData.myCourses.isNotEmpty) ...[
+                  // Continue Learning Section (only for logged-in users with courses)
+                  if (homeData.userProfile.id != -1 &&
+                      homeData.myCourses.isNotEmpty) ...[
+                    const SizedBox(height: AppSizes.space32),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSizes.paddingLg,
+                      ),
+                      child: _buildSectionHeader(
+                        context,
+                        'Continue Learning',
+                        () => context.go(AppRoutes.myCourses),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.space16),
+                    Builder(
+                      builder: (context) {
+                        // Find course with highest progress (completion percentage)
+                        // If multiple courses have same progress, pick the newest (highest ID)
+                        final purchasedCourses = homeData.myCourses
+                            .where((c) => c.isPurchased)
+                            .toList();
+
+                        if (purchasedCourses.isEmpty) {
+                          // Fallback to first course if no purchased courses
+                          return _ContinueLearningSection(
+                            course: homeData.myCourses.first,
+                          );
+                        }
+
+                        // Sort by completion percentage (descending), then by ID (descending)
+                        purchasedCourses.sort((a, b) {
+                          final progressComparison = b.completionPercentage
+                              .compareTo(a.completionPercentage);
+                          if (progressComparison != 0) {
+                            return progressComparison; // Higher progress first
+                          }
+                          return b.id.compareTo(
+                            a.id,
+                          ); // Newer (higher ID) first
+                        });
+
+                        return _ContinueLearningSection(
+                          course: purchasedCourses.first,
+                        );
+                      },
+                    ),
+                  ],
                   const SizedBox(height: AppSizes.space32),
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -60,87 +107,45 @@ class HomeScreen extends ConsumerWidget {
                     ),
                     child: _buildSectionHeader(
                       context,
-                      'Continue Learning',
-                      () => context.go(AppRoutes.myCourses),
+                      'Explore Categories',
+                      () => context.pushNamed(AppRoutes.categoriesName),
                     ),
                   ),
                   const SizedBox(height: AppSizes.space16),
-                  Builder(
-                    builder: (context) {
-                      // Find course with highest progress (completion percentage)
-                      // If multiple courses have same progress, pick the newest (highest ID)
-                      final purchasedCourses = homeData.myCourses
-                          .where((c) => c.isPurchased)
-                          .toList();
+                  _CategoryListSection(categories: homeData.categories),
 
-                      if (purchasedCourses.isEmpty) {
-                        // Fallback to first course if no purchased courses
-                        return _ContinueLearningSection(
-                          course: homeData.myCourses.first,
-                        );
-                      }
-
-                      // Sort by completion percentage (descending), then by ID (descending)
-                      purchasedCourses.sort((a, b) {
-                        final progressComparison = b.completionPercentage
-                            .compareTo(a.completionPercentage);
-                        if (progressComparison != 0) {
-                          return progressComparison; // Higher progress first
-                        }
-                        return b.id.compareTo(a.id); // Newer (higher ID) first
-                      });
-
-                      return _ContinueLearningSection(
-                        course: purchasedCourses.first,
-                      );
-                    },
+                  const SizedBox(height: AppSizes.space32),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingLg,
+                    ),
+                    child: _buildSectionHeader(
+                      context,
+                      'Popular Courses',
+                      () => context.pushNamed('allCourses'),
+                    ),
                   ),
+                  const SizedBox(height: AppSizes.space16),
+                  _PopularCoursesList(courses: homeData.popularCourses),
+
+                  const SizedBox(height: AppSizes.space32),
                 ],
-                const SizedBox(height: AppSizes.space32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingLg,
-                  ),
-                  child: _buildSectionHeader(
-                    context,
-                    'Explore Categories',
-                    () => context.pushNamed(AppRoutes.categoriesName),
-                  ),
-                ),
-                const SizedBox(height: AppSizes.space16),
-                _CategoryListSection(categories: homeData.categories),
-
-                const SizedBox(height: AppSizes.space32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingLg,
-                  ),
-                  child: _buildSectionHeader(
-                    context,
-                    'Popular Courses',
-                    () => context.pushNamed('allCourses'),
-                  ),
-                ),
-                const SizedBox(height: AppSizes.space16),
-                _PopularCoursesList(courses: homeData.popularCourses),
-
-                const SizedBox(height: AppSizes.space32),
-              ],
+              ),
             ),
+          );
+        },
+        loading: () => const MainScreenWrapper(
+          useScroll: false,
+          child: Center(child: AppLoadingIndicator()),
+        ),
+        error: (err, stack) => MainScreenWrapper(
+          child: ErrorView(
+            error: err,
+            onRetry: () {
+              ref.invalidate(userProfileProvider);
+              ref.invalidate(homeDataProvider);
+            },
           ),
-        );
-      },
-      loading: () => const MainScreenWrapper(
-        useScroll: false,
-        child: Center(child: AppLoadingIndicator()),
-      ),
-      error: (err, stack) => MainScreenWrapper(
-        child: ErrorView(
-          error: err,
-          onRetry: () {
-            ref.invalidate(userProfileProvider);
-            ref.invalidate(homeDataProvider);
-          },
         ),
       ),
     );
