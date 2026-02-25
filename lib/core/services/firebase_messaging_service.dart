@@ -33,7 +33,8 @@ class FirebaseMessagingService {
       log(
         '📬 FCM [Foreground] title=${message.notification?.title} data=${message.data}',
       );
-      _handleNavigation(message.data);
+      // Foreground: do NOT auto-navigate. The MainWrapper shows an in-app banner.
+      // User taps the banner to navigate manually.
     });
 
     // ─────────────────────────────────────────────────────────────

@@ -30,6 +30,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Always fetch fresh data when screen opens — avoids showing stale order status
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(orderDetailProvider(widget.orderId));
+    });
+  }
+
   Future<void> _pickAndUploadProof() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
@@ -81,9 +90,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return PopScope(
-      canPop: true,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop && orderAsync.hasValue) {
+        if (didPop) return;
+
+        if (orderAsync.hasValue) {
           final order = orderAsync.value;
           // Refresh courses if order was approved
           if (order?.status.value == 'approved') {
@@ -94,6 +105,12 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             ref.invalidate(homePopularCoursesProvider);
             ref.invalidate(homeCategoriesProvider);
           }
+        }
+
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.home);
         }
       },
       child: MainScreenWrapper(
@@ -148,9 +165,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               child: AppLoadingIndicator(),
             ),
           ),
-        ),
-      ),
-    );
+        ), // when
+      ), // wrapper
+    ); // scope
   }
 
   Widget _buildContent(BuildContext context, OrderModel order, bool isDark) {

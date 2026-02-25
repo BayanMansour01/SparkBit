@@ -200,9 +200,13 @@ class AppSnackBar {
         margin: EdgeInsets.only(
           left: 16,
           right: 16,
-          bottom: MediaQuery.of(context).size.height / 2 - 40,
+          top: MediaQuery.of(context).padding.top + 8,
+          bottom:
+              MediaQuery.of(context).size.height -
+              MediaQuery.of(context).padding.top -
+              120,
         ),
-        duration: const Duration(seconds: 6),
+        duration: const Duration(seconds: 5),
       ),
     );
   }
