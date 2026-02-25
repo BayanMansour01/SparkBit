@@ -30,7 +30,7 @@ class DarkTheme {
         onSurface: AppColors.darkText,
         onError: AppColors.white,
         outline: AppColors.darkDivider,
-        shadow: AppColors.black,
+        shadow: AppColors.darkBackground,
       ),
       appBarTheme: AppBarTheme(
         elevation: 0,

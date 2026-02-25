@@ -12,6 +12,8 @@ import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
 import '../providers/orders_provider.dart';
+import '../../../cart/presentation/providers/cart_provider.dart';
+import '../../../courses/presentation/providers/courses_provider.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -48,133 +50,144 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
-    return MainScreenWrapper(
-      appBar: Column(
-        children: [
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: theme.iconTheme.color,
-                  ),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go(AppRoutes.home);
-                    }
-                  },
-                ),
-                Text(
-                  'My Enrollments',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: textColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ),
-      onRefresh: _refreshList,
-      child: ordersState.when(
-        data: (data) {
-          if (data.data.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go(AppRoutes.home);
+        }
+      },
+      child: MainScreenWrapper(
+        appBar: Column(
+          children: [
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
                 children: [
-                  const SizedBox(height: 60),
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: theme.iconTheme.color,
                     ),
-                    child: Icon(
-                      Icons.receipt_long_rounded,
-                      size: 64,
-                      color: AppColors.primary.withOpacity(0.5),
-                    ),
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go(AppRoutes.home);
+                      }
+                    },
                   ),
-                  const SizedBox(height: 24),
                   Text(
-                    'No orders found',
+                    'My Enrollments',
                     style: GoogleFonts.outfit(
-                      color: theme.colorScheme.onSurface,
-                      fontSize: 20,
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'You haven\'t placed any orders yet.',
-                    style: GoogleFonts.outfit(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      fontSize: 14,
+                      fontSize: 24,
+                      color: textColor,
                     ),
                   ),
                 ],
               ),
-            );
-          }
-
-          return ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            itemCount:
-                data.data.length +
-                (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
-            separatorBuilder: (context, index) => const SizedBox(height: 20),
-            itemBuilder: (context, index) {
-              if (index == data.data.length) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: AppLoadingIndicator(size: 24),
-                  ),
-                );
-              }
-
-              // Pagination check
-              if (index == data.data.length - 1 &&
-                  ref.read(ordersProvider.notifier).hasMore &&
-                  !ref.read(ordersProvider.notifier).isLoadingMore) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  ref.read(ordersProvider.notifier).loadNextPage();
-                });
-              }
-
-              final order = data.data[index];
-              return _OrderCard(
-                order: order,
-                isDark: isDark,
-                onReturn: _refreshList,
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+        onRefresh: _refreshList,
+        child: ordersState.when(
+          data: (data) {
+            if (data.data.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 60),
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.receipt_long_rounded,
+                        size: 64,
+                        color: AppColors.primary.withOpacity(0.5),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'No orders found',
+                      style: GoogleFonts.outfit(
+                        color: theme.colorScheme.onSurface,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'You haven\'t placed any orders yet.',
+                      style: GoogleFonts.outfit(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
               );
-            },
-          );
-        },
-        error: (error, stackTrace) => ErrorView(
-          error: error.toString(),
-          onRetry: () => ref.read(ordersProvider.notifier).refresh(),
-        ),
-        loading: () => const Center(
-          child: Padding(
-            padding: EdgeInsets.only(top: 100),
-            child: AppLoadingIndicator(),
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              itemCount:
+                  data.data.length +
+                  (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
+              separatorBuilder: (context, index) => const SizedBox(height: 20),
+              itemBuilder: (context, index) {
+                if (index == data.data.length) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: AppLoadingIndicator(size: 24),
+                    ),
+                  );
+                }
+
+                // Pagination check
+                if (index == data.data.length - 1 &&
+                    ref.read(ordersProvider.notifier).hasMore &&
+                    !ref.read(ordersProvider.notifier).isLoadingMore) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ref.read(ordersProvider.notifier).loadNextPage();
+                  });
+                }
+
+                final order = data.data[index];
+                return _OrderCard(
+                  order: order,
+                  isDark: isDark,
+                  onReturn: _refreshList,
+                );
+              },
+            );
+          },
+          error: (error, stackTrace) => ErrorView(
+            error: error.toString(),
+            onRetry: () => ref.read(ordersProvider.notifier).refresh(),
           ),
-        ),
-      ),
-    );
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.only(top: 100),
+              child: AppLoadingIndicator(),
+            ),
+          ),
+        ), // when
+      ), // wrapper
+    ); // scope
   }
 }
 
@@ -238,6 +251,14 @@ class _OrderCard extends ConsumerWidget {
     if (confirmed == true) {
       try {
         await ref.read(ordersProvider.notifier).cancelOrder(order.id);
+
+        // Reset cart fully + refresh course purchase states
+        ref.read(cartProvider.notifier).resetCart();
+        ref.invalidate(coursesProvider);
+        ref.invalidate(myCoursesProvider);
+        ref.invalidate(homePopularCoursesProvider);
+        ref.invalidate(homeCategoriesProvider);
+
         if (context.mounted) {
           AppSnackBar.showSuccess(context, 'Enrollment cancelled successfully');
         }
@@ -446,55 +467,75 @@ class _OrderCard extends ConsumerWidget {
                 ),
 
                 // Actions
-                if (order.status.value == 'pending') ...[
-                  const SizedBox(height: 16),
-                  Divider(
-                    color: isDark ? Colors.grey[800] : Colors.grey[100],
-                    height: 1,
-                  ),
-                  const SizedBox(height: 12),
-                  AppButton(
-                    text: 'Cancel Enrollment',
-                    onPressed: () => _cancelOrder(context, ref),
-                    variant: AppButtonVariant.error,
-                    height: 48,
-                    icon: Icons.close_rounded,
-                  ),
-                ] else if (order.status.value == 'awaiting_payment_proof') ...[
-                  const SizedBox(height: 16),
-                  Divider(
-                    color: isDark ? Colors.grey[800] : Colors.grey[100],
-                    height: 1,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF59E0B).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.upload_file_rounded,
-                          size: 16,
+                if (order.status.value == 'awaiting_payment_proof') ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B).withOpacity(0.12),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
                           color: Color(0xFFF59E0B),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Upload Payment Proof',
-                        style: GoogleFonts.outfit(
-                          color: const Color(0xFFF59E0B),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Please upload payment proof to confirm your enrollment',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? const Color(0xFFFCD34D)
+                                  : const Color(0xFFB45309),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => _cancelOrder(context, ref),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                        ),
+                        child: Text(
+                          'Cancel Order',
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
                         ),
                       ),
                       const Spacer(),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 18,
-                        color: secondaryTextColor,
+                      AppButton(
+                        text: 'Upload Proof',
+                        onPressed: () async {
+                          await context.pushNamed(
+                            AppRoutes.orderDetailsName,
+                            pathParameters: {'id': order.id.toString()},
+                          );
+                          onReturn();
+                        },
+                        variant: AppButtonVariant.primary,
+                        width: 160,
+                        height: 48,
+                        icon: Icons.upload_file_rounded,
+                        fontSize: 14,
                       ),
                     ],
                   ),
