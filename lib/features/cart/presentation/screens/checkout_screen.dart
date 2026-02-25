@@ -8,6 +8,7 @@ import 'package:sparkbit/core/widgets/app_button.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import '../providers/cart_provider.dart';
 import '../widgets/order_summary_widget.dart';
+import '../../data/models/cart_item_model.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -19,10 +20,19 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
+  List<CartItemModel> _lastItems =
+      []; // To persist items in UI during success transition
+  double _lastPrice = 0.0;
+
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
     final theme = Theme.of(context);
+
+    if (cartState.items.isNotEmpty) {
+      _lastItems = cartState.items;
+      _lastPrice = cartState.totalPrice;
+    }
 
     // Listen to order success and errors
     ref.listen<CartState>(cartProvider, (previous, next) {
@@ -36,61 +46,78 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
     });
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Enrollment',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    return PopScope(
+      canPop: cartState.lastOrder == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+
+        if (cartState.lastOrder != null) {
+          // If order was successful, back button goes to Home
+          ref.read(cartProvider.notifier).clearLastOrder();
+          context.goNamed(AppRoutes.homeName);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          title: const Text(
+            'Enrollment',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          elevation: 0,
         ),
-        centerTitle: true,
-        elevation: 0,
-      ),
-      body: cartState.items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 80,
-                    color: theme.disabledColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Cart is Empty',
-                    style: theme.textTheme.titleLarge?.copyWith(
+        body: cartState.items.isEmpty && cartState.lastOrder == null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 80,
                       color: theme.disabledColor,
                     ),
-                  ),
-                ],
-              ),
-            )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Order Summary
-                  OrderSummaryWidget(
-                    items: cartState.items,
-                    totalPrice: cartState.totalPrice,
-                  ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Cart is Empty',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: theme.disabledColor,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Order Summary
+                    OrderSummaryWidget(
+                      items: _lastItems,
+                      totalPrice: _lastPrice,
+                    ),
 
-                  const SizedBox(height: 32),
+                    const SizedBox(height: 32),
 
-                  AppButton(
-                    text:
-                        'Confirm Enrollment - ${AppStrings.formatPrice(cartState.totalPrice)}',
-                    isLoading: cartState.isLoading,
-                    onPressed: () {
-                      ref.read(cartProvider.notifier).createOrder();
-                    },
-                    icon: Icons.check_circle_outline,
-                  ),
-                ],
+                    AppButton(
+                      text: cartState.lastOrder != null
+                          ? 'Order Confirmed'
+                          : 'Confirm Enrollment - ${AppStrings.formatPrice(cartState.totalPrice)}',
+                      isLoading: cartState.isLoading,
+                      onPressed: cartState.lastOrder != null
+                          ? () {} // Disable button after success
+                          : () {
+                              ref.read(cartProvider.notifier).createOrder();
+                            },
+                      icon: cartState.lastOrder != null
+                          ? Icons.check_circle
+                          : Icons.check_circle_outline,
+                    ),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -150,7 +177,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             AppButton(
               text: 'View Enrollment Details',
               onPressed: () {
-                context.goNamed(
+                ref.read(cartProvider.notifier).clearLastOrder();
+                context.pushNamed(
                   AppRoutes.orderDetailsName,
                   pathParameters: {'id': orderId.toString()},
                 );
@@ -159,6 +187,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             const SizedBox(height: 16),
             TextButton(
               onPressed: () {
+                ref.read(cartProvider.notifier).clearLastOrder();
                 context.goNamed(AppRoutes.homeName);
               },
               child: Text(
