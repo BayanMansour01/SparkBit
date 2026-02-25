@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../constants/app_strings.dart';
+
 import '../constants/app_routes.dart';
 import '../resources/values_manager.dart';
 import 'app_update_listener.dart';
@@ -14,6 +14,7 @@ import '../../features/courses/presentation/providers/courses_provider.dart';
 import '../../features/home/presentation/providers/home_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../utils/snackbar_utils.dart';
+import '../utils/dialog_utils.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -26,6 +27,9 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
   static const platform = MethodChannel('com.example.yuna/back_button');
+
+  DateTime? _lastBackPressTime;
+  bool _isExitDialogOpen = false;
 
   @override
   void initState() {
@@ -185,19 +189,48 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
 
   Future<bool> _handleBackPress() async {
     final rootNavigator = Navigator.of(context, rootNavigator: true);
+    final now = DateTime.now();
+
+    // If the exit dialog is currently displaying...
+    if (_isExitDialogOpen) {
+      if (_lastBackPressTime != null &&
+          now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
+        // Double tap confirmed! Pop dialog with true.
+        rootNavigator.pop(true);
+        // And also directly tell the MethodChannel to exit the app
+        return true;
+      }
+
+      // Single tap: just dismiss the dialog and update time
+      _lastBackPressTime = now;
+      rootNavigator.pop(false);
+      return false; // Tells native code we handled it
+    }
 
     // If we have a screen pushed on top of the root navigator (like OrdersScreen),
     // pop that screen and tell native code we handled it (return false).
     if (rootNavigator.canPop()) {
       debugPrint('🔙 Sub-page active, popping screen');
+      _lastBackPressTime = now;
       rootNavigator.pop();
       return false; // Handled in Flutter
     }
 
+    // Root page active
+    if (_lastBackPressTime != null &&
+        now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
+      // Very fast double tap before dialog even appeared
+      return true;
+    }
+
+    _lastBackPressTime = now;
     debugPrint('🔙 Root page active, showing exit dialog...');
+    _isExitDialogOpen = true;
 
     // Always show exit dialog on back button at root
-    final shouldExit = await _showExitDialog(context);
+    final shouldExit = await DialogUtils.showExitDialog(context);
+
+    _isExitDialogOpen = false;
     debugPrint('🔙 User chose to exit: $shouldExit');
 
     return shouldExit;
@@ -237,127 +270,6 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
         ),
       ),
     );
-  }
-
-  Future<bool> _showExitDialog(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (context) => BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-            child: AlertDialog(
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.surface.withOpacity(0.9),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.r24),
-                side: BorderSide(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              contentPadding: const EdgeInsets.fromLTRB(
-                AppPadding.p24,
-                AppPadding.p32,
-                AppPadding.p24,
-                AppPadding.p16,
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppPadding.p16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.error.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.logout_rounded,
-                      color: Theme.of(context).colorScheme.error,
-                      size: AppSize.s32,
-                    ),
-                  ),
-                  const SizedBox(height: AppSize.s24),
-                  Text(
-                    AppStrings.exitApp,
-                    style: TextStyle(
-                      fontSize: AppSize.s20,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: AppSize.s12),
-                  Text(
-                    AppStrings.exitAppMessage,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withOpacity(0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: AppSize.s32),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppPadding.p14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.r12,
-                              ),
-                            ),
-                          ),
-                          child: Text(
-                            AppStrings.cancel,
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurface.withOpacity(0.6),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSize.s12),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppPadding.p14,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                AppRadius.r12,
-                              ),
-                            ),
-                          ),
-                          child: const Text(
-                            AppStrings.exit,
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ) ??
-        false;
   }
 }
 
