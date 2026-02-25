@@ -66,7 +66,10 @@ class DeviceService {
 
   /// Register or update device if information changed
   /// If [fcmToken] is provided, it uses it. Otherwise, it fetches it from FirebaseMessagingService.
-  Future<bool> registerDeviceIfChanged({String? fcmToken}) async {
+  Future<bool> registerDeviceIfChanged({
+    String? fcmToken,
+    bool force = false,
+  }) async {
     // Get actual FCM token if not provided
     final String token =
         fcmToken ?? (await _firebaseMessagingService.getToken() ?? '');
@@ -91,8 +94,8 @@ class DeviceService {
         lastDeviceInfo != currentDeviceInfo ||
         lastFcmToken != token;
 
-    if (!hasChanged) {
-      // Nothing changed, skip API call
+    if (!hasChanged && !force) {
+      // Nothing changed and force is false, skip API call
       return false;
     }
 

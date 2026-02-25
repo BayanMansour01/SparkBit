@@ -33,12 +33,15 @@ class AuthController extends AutoDisposeAsyncNotifier<void> {
       // Invalidate relevant user-dependent providers
       ref.invalidate(myCoursesProvider);
       ref.invalidate(cartProvider);
+      ref.invalidate(homePopularCoursesProvider);
+      ref.invalidate(homeCategoriesProvider);
+      ref.invalidate(coursesProvider);
       // Wait for profile to load? No, let UI handle loading state via watch
 
       // Register device in background (don't await to speed up UI response)
       // This is not critical for the immediate user session
       getIt<DeviceService>()
-          .registerDeviceIfChanged()
+          .registerDeviceIfChanged(force: true)
           .then((_) {})
           .catchError((_) {});
     });
@@ -70,6 +73,9 @@ class AuthController extends AutoDisposeAsyncNotifier<void> {
       ref.invalidate(myCoursesProvider);
       ref.invalidate(homeDataProvider);
       ref.invalidate(cartProvider);
+      ref.invalidate(homePopularCoursesProvider);
+      ref.invalidate(homeCategoriesProvider);
+      ref.invalidate(coursesProvider);
 
       // We don't touch 'state' here to avoid triggering side effects in the UI
       // The local providers invalidation will naturally transition the UI to guest mode.

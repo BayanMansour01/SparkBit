@@ -172,7 +172,9 @@ class _SplashScreenState extends State<SplashScreen>
     final token = prefs.getString('access_token');
 
     if (token != null && token.isNotEmpty) {
-      getIt<DeviceService>().registerDeviceIfChanged().catchError((e) {
+      getIt<DeviceService>().registerDeviceIfChanged(force: true).catchError((
+        e,
+      ) {
         debugPrint('Device registration failed on startup: $e');
         return false;
       });
