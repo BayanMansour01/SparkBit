@@ -7,10 +7,10 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
-import '../../../../core/constants/app_routes.dart';
 import '../providers/notifications_provider.dart';
 import '../../data/models/notification_model.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/services/notification_navigator.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -31,50 +31,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   void _handleNotificationTap(NotificationModel notification) {
-    if (notification.notificationType == null) return;
-
-    final data = notification.data ?? {};
-    final type = notification.notificationType;
-
-    switch (type) {
-      case 'order_status_changed':
-        final orderId = data['order_id'] ?? data['id'];
-        if (orderId != null) {
-          context.pushNamed(
-            AppRoutes.orderDetailsName,
-            pathParameters: {'id': orderId.toString()},
-          );
-        }
-        break;
-
-      case 'course_update':
-        final courseId = data['course_id'] ?? data['id'];
-        if (courseId != null) {
-          context.pushNamed(
-            AppRoutes.courseDetailsName,
-            pathParameters: {'id': courseId.toString()},
-          );
-        }
-        break;
-
-      case 'new_lesson':
-        final courseId = data['course_id'];
-        if (courseId != null) {
-          context.pushNamed(
-            AppRoutes.courseDetailsName,
-            pathParameters: {'id': courseId.toString()},
-          );
-        }
-        break;
-
-      case 'general':
-        // General notifications - just mark as read, no navigation
-        break;
-
-      default:
-        // Handle other types or stay on page
-        break;
-    }
+    NotificationNavigator.navigate(
+      notificationType: notification.notificationType,
+      data: notification.data,
+    );
   }
 
   @override
@@ -214,20 +174,16 @@ class _NotificationCard extends StatelessWidget {
 
     switch (notification.notificationType) {
       case 'order_status_changed':
-      case 'order':
-      case 'purchase':
         iconData = Icons.shopping_bag_rounded;
         iconColor = Colors.orange;
         break;
 
       case 'course_update':
-      case 'course':
         iconData = Icons.school_rounded;
         iconColor = Colors.blue;
         break;
 
       case 'new_lesson':
-      case 'lesson':
         iconData = Icons.play_circle_filled_rounded;
         iconColor = Colors.green;
         break;
