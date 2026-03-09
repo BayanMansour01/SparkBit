@@ -749,7 +749,24 @@ class _BottomEnrollBar extends ConsumerWidget {
           child: AppButton(
             text: 'Start Learning',
             onPressed: () {
-              DefaultTabController.of(context).animateTo(1);
+              final lessonsAsync = ref.read(lessonsProvider(course.id));
+              final lessons = lessonsAsync.valueOrNull?.data;
+
+              if (lessons != null && lessons.isNotEmpty) {
+                final firstAccessible = lessons
+                    .where((l) => l.canAccess)
+                    .toList();
+                if (firstAccessible.isNotEmpty) {
+                  context.push(
+                    AppRoutes.lessonViewer,
+                    extra: firstAccessible.first,
+                  );
+                  return;
+                }
+              }
+
+              // Fallback: switch to Lessons tab
+              DefaultTabController.maybeOf(context)?.animateTo(1);
             },
           ),
         ),
@@ -777,7 +794,7 @@ class _BottomEnrollBar extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Total Price',
+                  'Price',
                   style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
                 ),
                 Text(

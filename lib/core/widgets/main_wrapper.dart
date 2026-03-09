@@ -23,11 +23,30 @@ class MainWrapper extends ConsumerStatefulWidget {
   ConsumerState<MainWrapper> createState() => _MainWrapperState();
 }
 
-class _MainWrapperState extends ConsumerState<MainWrapper> {
+class _MainWrapperState extends ConsumerState<MainWrapper>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _setupNotificationListeners();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh course progress data when user returns to the app
+      ref.read(myCoursesProvider.notifier).refreshData();
+      ref.read(coursesProvider.notifier).refreshData();
+      ref.invalidate(homeDataProvider);
+      ref.invalidate(homePopularCoursesProvider);
+    }
   }
 
   void _setupNotificationListeners() {
