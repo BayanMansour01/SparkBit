@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,7 +13,6 @@ import '../../features/courses/presentation/providers/courses_provider.dart';
 import '../../features/home/presentation/providers/home_provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../utils/snackbar_utils.dart';
-import '../utils/dialog_utils.dart';
 
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
@@ -26,15 +24,9 @@ class MainWrapper extends ConsumerStatefulWidget {
 }
 
 class _MainWrapperState extends ConsumerState<MainWrapper> {
-  static const platform = MethodChannel('com.example.yuna/back_button');
-
-  DateTime? _lastBackPressTime;
-  bool _isExitDialogOpen = false;
-
   @override
   void initState() {
     super.initState();
-    _setupBackButtonHandler();
     _setupNotificationListeners();
   }
 
@@ -163,77 +155,11 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     }
   }
 
-  void _setupBackButtonHandler() {
-    platform.setMethodCallHandler((call) async {
-      debugPrint('🔙 Native back button pressed via MethodChannel!');
-
-      if (call.method == 'onBackPressed') {
-        // Show exit dialog
-        final shouldExit = await _handleBackPress();
-        debugPrint('🔙 Returning $shouldExit to native code');
-
-        // Return true to allow native back, false to prevent it
-        return shouldExit;
-      }
-
-      return false;
-    });
-  }
-
   void _onTap(BuildContext context, int index) {
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,
     );
-  }
-
-  Future<bool> _handleBackPress() async {
-    final rootNavigator = Navigator.of(context, rootNavigator: true);
-    final now = DateTime.now();
-
-    // If the exit dialog is currently displaying...
-    if (_isExitDialogOpen) {
-      if (_lastBackPressTime != null &&
-          now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
-        // Double tap confirmed! Pop dialog with true.
-        rootNavigator.pop(true);
-        // And also directly tell the MethodChannel to exit the app
-        return true;
-      }
-
-      // Single tap: just dismiss the dialog and update time
-      _lastBackPressTime = now;
-      rootNavigator.pop(false);
-      return false; // Tells native code we handled it
-    }
-
-    // If we have a screen pushed on top of the root navigator (like OrdersScreen),
-    // pop that screen and tell native code we handled it (return false).
-    if (rootNavigator.canPop()) {
-      debugPrint('🔙 Sub-page active, popping screen');
-      _lastBackPressTime = now;
-      rootNavigator.pop();
-      return false; // Handled in Flutter
-    }
-
-    // Root page active
-    if (_lastBackPressTime != null &&
-        now.difference(_lastBackPressTime!) < const Duration(seconds: 2)) {
-      // Very fast double tap before dialog even appeared
-      return true;
-    }
-
-    _lastBackPressTime = now;
-    debugPrint('🔙 Root page active, showing exit dialog...');
-    _isExitDialogOpen = true;
-
-    // Always show exit dialog on back button at root
-    final shouldExit = await DialogUtils.showExitDialog(context);
-
-    _isExitDialogOpen = false;
-    debugPrint('🔙 User chose to exit: $shouldExit');
-
-    return shouldExit;
   }
 
   @override
@@ -242,31 +168,13 @@ class _MainWrapperState extends ConsumerState<MainWrapper> {
     final isGuest = profile?.id == -1;
 
     return AppUpdateListener(
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, result) async {
-          debugPrint('🔙 PopScope called (fallback) - didPop: $didPop');
-
-          if (didPop) {
-            debugPrint('🔙 Already handled');
-            return;
-          }
-
-          // Fallback: Handle back button press if MethodChannel didn't catch it
-          final shouldExit = await _handleBackPress();
-          if (shouldExit && context.mounted) {
-            SystemNavigator.pop();
-          }
-        },
-
-        child: Scaffold(
-          extendBody: true, // Allow body to extend behind the navbar
-          body: widget.navigationShell,
-          bottomNavigationBar: _CustomBottomNavBar(
-            currentIndex: widget.navigationShell.currentIndex,
-            onTap: (index) => _onTap(context, index),
-            isGuest: isGuest,
-          ),
+      child: Scaffold(
+        extendBody: true,
+        body: widget.navigationShell,
+        bottomNavigationBar: _CustomBottomNavBar(
+          currentIndex: widget.navigationShell.currentIndex,
+          onTap: (index) => _onTap(context, index),
+          isGuest: isGuest,
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -57,7 +58,10 @@ class YunaApp extends ConsumerWidget {
       darkTheme: DarkTheme.theme,
       themeMode: themeMode, // Persisted theme from SharedPreferences
       // Router with AppConfig wrapper
-      routerConfig: AppRouter.router,
+      routerDelegate: AppRouter.router.routerDelegate,
+      routeInformationParser: AppRouter.router.routeInformationParser,
+      routeInformationProvider: AppRouter.router.routeInformationProvider,
+      backButtonDispatcher: AppRouter.backButtonDispatcher,
       builder: (context, child) {
         return AppConfigWrapper(
           key: const ValueKey('AppConfigWrapper'),

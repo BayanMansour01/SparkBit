@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sparkbit/features/cart/presentation/screens/cart_screen.dart';
 import 'package:sparkbit/features/orders/presentation/screens/orders_screen.dart';
@@ -21,8 +22,9 @@ import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/notifications/presentation/screens/notifications_screen.dart';
-import '../core/widgets/main_wrapper.dart'; // Added
+import '../core/widgets/main_wrapper.dart';
 import '../features/cart/presentation/screens/checkout_screen.dart';
+import '../core/utils/dialog_utils.dart';
 
 class AppRouter {
   AppRouter._();
@@ -30,6 +32,11 @@ class AppRouter {
   /// Root navigator key for routes that should cover the bottom nav bar
   static final GlobalKey<NavigatorState> rootNavigatorKey =
       GlobalKey<NavigatorState>();
+
+  /// Custom back button dispatcher
+  static final backButtonDispatcher = _ExitBackButtonDispatcher(
+    rootNavigatorKey,
+  );
 
   /// GoRouter configuration
   static final GoRouter router = GoRouter(
@@ -292,4 +299,31 @@ class AppRouter {
       ),
     ),
   );
+}
+
+/// Custom back button dispatcher that shows exit dialog on root tabs.
+class _ExitBackButtonDispatcher extends RootBackButtonDispatcher {
+  final GlobalKey<NavigatorState> navigatorKey;
+
+  _ExitBackButtonDispatcher(this.navigatorKey);
+
+  @override
+  Future<bool> didPopRoute() async {
+    // If the root navigator can pop, there's a sub-page on top — let GoRouter handle it
+    if (navigatorKey.currentState?.canPop() == true) {
+      return super.didPopRoute();
+    }
+
+    // We're on a root tab — show exit confirmation
+    final context = navigatorKey.currentContext;
+    if (context != null && context.mounted) {
+      final shouldExit = await DialogUtils.showExitDialog(context);
+      if (shouldExit) {
+        SystemNavigator.pop();
+      }
+      return true;
+    }
+
+    return super.didPopRoute();
+  }
 }
