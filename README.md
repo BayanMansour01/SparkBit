@@ -1,4 +1,4 @@
-# Sparkbit (Yuna) Flutter App
+# Sparkbit Flutter App
 
 Sparkbit is a Flutter learning platform app using a clean, feature-first architecture with Riverpod, GetIt, and GoRouter.
 
