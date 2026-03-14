@@ -40,6 +40,9 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // ⚠️ Skipping auto-refresh on resume to avoid unnecessary API calls when
+    // picking files, switching apps briefly, etc.
+    /*
     if (state == AppLifecycleState.resumed) {
       // Refresh course progress data when user returns to the app
       ref.read(myCoursesProvider.notifier).refreshData();
@@ -47,6 +50,7 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
       ref.invalidate(homeDataProvider);
       ref.invalidate(homePopularCoursesProvider);
     }
+    */
   }
 
   void _setupNotificationListeners() {

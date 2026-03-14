@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sparkbit/core/constants/app_sizes.dart';
 import 'package:sparkbit/core/widgets/responsive/responsive_center.dart';
+import 'package:sparkbit/core/widgets/shimmers/app_page_skeleton.dart';
 import 'package:sparkbit/features/contact_us/data/models/contact_method_model.dart';
 import 'package:sparkbit/features/contact_us/presentation/providers/contact_us_provider.dart';
 
@@ -34,7 +35,11 @@ class ContactUsScreen extends ConsumerWidget {
               return _ContactMethodCard(method: method);
             },
           ),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const AppPageSkeleton(
+            itemCount: 5,
+            cardHeight: 92,
+            padding: EdgeInsets.all(AppSizes.paddingLg),
+          ),
           error: (err, stack) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 import '../../constants/app_sizes.dart';
+import 'app_shimmer.dart';
 
 class CourseListShimmer extends StatelessWidget {
   final int itemCount;
@@ -27,23 +27,16 @@ class CourseListShimmer extends StatelessWidget {
   }
 
   Widget _buildShimmerItem(BuildContext context, bool isDark) {
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final palette = AppShimmer.palette(context);
 
     return Container(
       padding: const EdgeInsets.all(AppSizes.space16),
       decoration: BoxDecoration(
-        color: Theme.of(
-          context,
-        ).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: palette.surface,
         borderRadius: BorderRadius.circular(AppSizes.radiusXl),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
-        ),
+        border: Border.all(color: palette.border),
       ),
-      child: Shimmer.fromColors(
-        baseColor: baseColor,
-        highlightColor: highlightColor,
+      child: AppShimmer(
         child: Row(
           children: [
             // Image Placeholder
@@ -51,7 +44,7 @@ class CourseListShimmer extends StatelessWidget {
               width: 100,
               height: 100,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: palette.placeholder,
                 borderRadius: BorderRadius.circular(AppSizes.radiusMd),
               ),
             ),
@@ -67,7 +60,7 @@ class CourseListShimmer extends StatelessWidget {
                     width: double.infinity,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: palette.placeholder,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                   ),
@@ -76,7 +69,7 @@ class CourseListShimmer extends StatelessWidget {
                     width: 150,
                     height: 16,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: palette.placeholder,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                   ),
@@ -87,7 +80,7 @@ class CourseListShimmer extends StatelessWidget {
                     width: 100,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: palette.placeholder,
                       borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                     ),
                   ),
@@ -100,7 +93,7 @@ class CourseListShimmer extends StatelessWidget {
                         width: 40,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: palette.placeholder,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusSm,
                           ),
@@ -111,7 +104,7 @@ class CourseListShimmer extends StatelessWidget {
                         width: 60,
                         height: 12,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: palette.placeholder,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusSm,
                           ),
@@ -122,7 +115,7 @@ class CourseListShimmer extends StatelessWidget {
                         width: 50,
                         height: 20,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: palette.placeholder,
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusSm,
                           ),

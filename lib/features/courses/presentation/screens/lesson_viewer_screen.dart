@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:sparkbit/features/courses/data/models/lesson_model.dart';
+import 'package:sparkbit/features/home/presentation/providers/home_provider.dart';
 
 import '../providers/lesson_view_provider.dart';
+import '../providers/courses_provider.dart';
 import '../widgets/lesson_viewer/lesson_app_bar.dart';
 import '../widgets/lesson_viewer/lesson_content.dart';
 import '../widgets/lesson_viewer/lesson_video_player.dart';
@@ -60,7 +62,18 @@ class _LessonViewerScreenState extends ConsumerState<LessonViewerScreen> {
 
         return PopScope(
           canPop: true,
-          onPopInvokedWithResult: (didPop, result) {},
+          onPopInvokedWithResult: (didPop, result) {
+            // Trigger immediate data refresh when leaving lesson
+            if (didPop) {
+              // Force refresh all course data providers immediately
+              Future.microtask(() {
+                ref.read(myCoursesProvider.notifier).refreshData();
+                ref.invalidate(homePopularCoursesProvider);
+                ref.read(coursesProvider.notifier).refreshData();
+                ref.invalidate(homeDataProvider);
+              });
+            }
+          },
           child: Scaffold(
             backgroundColor: isLandscape
                 ? Colors.black

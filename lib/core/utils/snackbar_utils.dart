@@ -195,17 +195,9 @@ class AppSnackBar {
           0xFF0F172A,
         ).withOpacity(0.95), // لون داكن فخم مع شفافية بسيطة
         behavior: SnackBarBehavior.floating,
-        elevation: 0,
+        elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: MediaQuery.of(context).padding.top + 8,
-          bottom:
-              MediaQuery.of(context).size.height -
-              MediaQuery.of(context).padding.top -
-              120,
-        ),
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
         duration: const Duration(seconds: 5),
       ),
     );

@@ -7,7 +7,9 @@ import 'package:sparkbit/core/constants/app_colors.dart';
 import 'package:sparkbit/core/constants/app_strings.dart';
 import 'package:sparkbit/core/widgets/app_loading_indicator.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_network_image.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
+import 'package:sparkbit/core/widgets/shimmers/app_shimmer.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
 import '../../data/models/order_model.dart';
@@ -24,13 +26,15 @@ class OrdersScreen extends ConsumerStatefulWidget {
 
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _paginationScheduled = false;
 
   @override
   void initState() {
     super.initState();
-    // Pagination is handled by the scroll controller in the ListView,
-    // but since we are using MainScreenWrapper's scroll, we might need a different approach
-    // if we want to keep the ListView performance.
+    // Refresh list on every entry as requested
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(ordersProvider);
+    });
   }
 
   @override
@@ -40,7 +44,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 
   Future<void> _refreshList() async {
-    ref.invalidate(ordersProvider);
+    _paginationScheduled = false;
+    await ref.read(ordersProvider.notifier).refresh();
   }
 
   @override
@@ -96,7 +101,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
             const SizedBox(height: 10),
           ],
         ),
-        onRefresh: _refreshList,
+        onRefresh: () async {
+          _paginationScheduled = false;
+          await _refreshList();
+        },
         child: ordersState.when(
           data: (data) {
             if (data.data.isEmpty) {
@@ -139,55 +147,196 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
               );
             }
 
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              itemCount:
-                  data.data.length +
-                  (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
-              separatorBuilder: (context, index) => const SizedBox(height: 20),
-              itemBuilder: (context, index) {
-                if (index == data.data.length) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: AppLoadingIndicator(size: 24),
+            return Stack(
+              children: [
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  itemCount:
+                      data.data.length +
+                      (ref.read(ordersProvider.notifier).isLoadingMore ? 1 : 0),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 20),
+                  itemBuilder: (context, index) {
+                    if (index == data.data.length) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: AppLoadingIndicator(size: 24),
+                        ),
+                      );
+                    }
+
+                    // Pagination check - prevent duplicate calls
+                    final notifier = ref.read(ordersProvider.notifier);
+                    if (index == data.data.length - 1 &&
+                        notifier.hasMore &&
+                        !notifier.isLoadingMore &&
+                        !_paginationScheduled) {
+                      _paginationScheduled = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (mounted && !notifier.isLoadingMore) {
+                          notifier.loadNextPage().then((_) {
+                            // Reset flag after loading (allow next pagination)
+                            if (mounted) {
+                              setState(() {
+                                _paginationScheduled = false;
+                              });
+                            }
+                          });
+                        }
+                      });
+                    }
+
+                    final order = data.data[index];
+                    return _OrderCard(
+                      order: order,
+                      isDark: isDark,
+                      onReturn: _refreshList,
+                    );
+                  },
+                ),
+                if (ordersState.isLoading)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: ColoredBox(
+                        color: theme.colorScheme.surface,
+                        child: const _OrdersListSkeleton(itemCount: 5),
+                      ),
                     ),
-                  );
-                }
-
-                // Pagination check
-                if (index == data.data.length - 1 &&
-                    ref.read(ordersProvider.notifier).hasMore &&
-                    !ref.read(ordersProvider.notifier).isLoadingMore) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ref.read(ordersProvider.notifier).loadNextPage();
-                  });
-                }
-
-                final order = data.data[index];
-                return _OrderCard(
-                  order: order,
-                  isDark: isDark,
-                  onReturn: _refreshList,
-                );
-              },
+                  ),
+              ],
             );
           },
           error: (error, stackTrace) => ErrorView(
             error: error.toString(),
-            onRetry: () => ref.read(ordersProvider.notifier).refresh(),
+            onRetry: () {
+              _paginationScheduled = false;
+              ref.read(ordersProvider.notifier).refresh();
+            },
           ),
-          loading: () => const Center(
-            child: Padding(
-              padding: EdgeInsets.only(top: 100),
-              child: AppLoadingIndicator(),
-            ),
-          ),
+          loading: () => const _OrdersListSkeleton(itemCount: 5),
         ), // when
       ), // wrapper
     ); // scope
+  }
+}
+
+class _OrdersListSkeleton extends StatelessWidget {
+  final int itemCount;
+
+  const _OrdersListSkeleton({required this.itemCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = AppShimmer.palette(context);
+
+    final items = List<Widget>.generate(itemCount, (index) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: index == itemCount - 1 ? 0 : 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: palette.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: palette.border),
+          ),
+          child: AppShimmer(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _box(palette, width: 150, height: 18, radius: 8),
+                      const Spacer(),
+                      _box(palette, width: 92, height: 28, radius: 14),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 60,
+                    child: Row(
+                      children: [
+                        _thumb(palette),
+                        const SizedBox(width: 12),
+                        _thumb(palette),
+                        const SizedBox(width: 12),
+                        _thumb(palette),
+                        const SizedBox(width: 12),
+                        _thumb(palette),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _box(palette, width: 54, height: 12, radius: 6),
+                          const SizedBox(height: 6),
+                          _box(palette, width: 92, height: 15, radius: 7),
+                        ],
+                      ),
+                      const Spacer(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _box(palette, width: 38, height: 12, radius: 6),
+                          const SizedBox(height: 6),
+                          _box(palette, width: 88, height: 18, radius: 8),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _box(palette, width: double.infinity, height: 44, radius: 14),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.hasBoundedHeight) {
+          return ListView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+            children: items,
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(mainAxisSize: MainAxisSize.min, children: items),
+        );
+      },
+    );
+  }
+
+  static Widget _thumb(AppShimmerPalette palette) {
+    return _box(palette, width: 60, height: 60, radius: 12);
+  }
+
+  static Widget _box(
+    AppShimmerPalette palette, {
+    required double width,
+    required double height,
+    required double radius,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: palette.placeholder,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
   }
 }
 
@@ -258,6 +407,9 @@ class _OrderCard extends ConsumerWidget {
         ref.invalidate(myCoursesProvider);
         ref.invalidate(homePopularCoursesProvider);
         ref.invalidate(homeCategoriesProvider);
+
+        // Refresh the orders list
+        onReturn();
 
         if (context.mounted) {
           AppSnackBar.showSuccess(context, 'Enrollment cancelled successfully');
@@ -398,10 +550,10 @@ class _OrderCard extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(
                               11,
                             ), // slightly less than container
-                            child: Image.network(
-                              item.course.image,
+                            child: AppNetworkImage(
+                              imageUrl: item.course.image,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Icon(
+                              errorWidget: Icon(
                                 Icons.image_not_supported_rounded,
                                 size: 20,
                                 color: secondaryTextColor,

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sparkbit/core/constants/app_colors.dart';
 import 'package:sparkbit/core/constants/app_sizes.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_network_image.dart';
+import 'package:sparkbit/core/widgets/shimmers/app_page_skeleton.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import 'package:sparkbit/features/profile/presentation/providers/profile_provider.dart';
 import 'package:sparkbit/features/profile/presentation/providers/edit_profile_provider.dart';
@@ -151,13 +153,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ],
         ),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const AppPageSkeleton(itemCount: 3, cardHeight: 180),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
 
   Widget _buildBackground(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Stack(
       children: [
         // Top Gradient Blob
@@ -171,8 +175,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primary.withOpacity(0.3),
-                  AppColors.primary.withOpacity(0.05),
+                  AppColors.primary.withOpacity(isDark ? 0.16 : 0.3),
+                  AppColors.primary.withOpacity(isDark ? 0.02 : 0.05),
                 ],
               ),
             ),
@@ -189,8 +193,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  AppColors.primaryLight.withOpacity(0.2),
-                  AppColors.primaryLight.withOpacity(0.05),
+                  AppColors.primary.withOpacity(isDark ? 0.08 : 0.2),
+                  AppColors.primary.withOpacity(isDark ? 0.015 : 0.05),
                 ],
               ),
             ),
@@ -296,34 +300,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 editState.selectedImage!,
                                 fit: BoxFit.cover,
                               )
-                            : Image.network(
-                                profile.avatar != null &&
+                            : AppNetworkImage(
+                                imageUrl:
+                                    profile.avatar != null &&
                                         profile.avatar!.isNotEmpty
                                     ? profile.avatar!
                                     : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(profile.name)}&background=random&size=300',
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    child: Icon(
-                                      Icons.person_rounded,
-                                      size: 60,
-                                      color: AppColors.primary.withOpacity(0.5),
-                                    ),
-                                  );
-                                },
-                                loadingBuilder: (context, child, progress) {
-                                  if (progress == null) return child;
-                                  return Center(
-                                    child: CircularProgressIndicator(
-                                      value: progress.expectedTotalBytes != null
-                                          ? progress.cumulativeBytesLoaded /
-                                                progress.expectedTotalBytes!
-                                          : null,
-                                      strokeWidth: 2,
-                                    ),
-                                  );
-                                },
+                                errorWidget: Container(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    size: 60,
+                                    color: AppColors.primary.withOpacity(0.5),
+                                  ),
+                                ),
                               ),
                       ),
                     ),
@@ -535,6 +526,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       text: 'Save Changes',
       isLoading: editState.isLoading,
       icon: Icons.save_rounded,
+      enableShadow: true,
+      shadowOpacity: 0.1,
+      shadowBlurRadius: 8,
+      shadowOffset: const Offset(0, 3),
       onPressed: () async {
         final uniqueRef = ref.read(editProfileProvider.notifier);
         final success = await uniqueRef.saveProfile(_nameController.text);

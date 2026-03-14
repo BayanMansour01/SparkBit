@@ -29,7 +29,7 @@ class OrdersNotifier extends AsyncNotifier<PaginatedData<OrderModel>> {
     _hasMore = true;
     _isLoadingMore = false;
 
-    final repository = ref.watch(orderRepositoryProvider);
+    final repository = ref.read(orderRepositoryProvider);
     final result = await repository.getOrders(page: 1, perPage: 15);
 
     _hasMore = result.pagination.currentPage < result.pagination.lastPage;
@@ -66,8 +66,11 @@ class OrdersNotifier extends AsyncNotifier<PaginatedData<OrderModel>> {
     }
   }
 
+  /// Efficient refresh without double-fetching
   Future<void> refresh() async {
-    state = const AsyncLoading();
+    _page = 1;
+    _hasMore = true;
+    _isLoadingMore = false;
     ref.invalidateSelf();
     await future;
   }
@@ -75,12 +78,10 @@ class OrdersNotifier extends AsyncNotifier<PaginatedData<OrderModel>> {
   Future<void> cancelOrder(int orderId) async {
     final repository = ref.read(orderRepositoryProvider);
     await repository.cancelOrder(orderId);
-    await refresh();
   }
 
   Future<void> uploadPaymentProof(int orderId, String filePath) async {
     final repository = ref.read(orderRepositoryProvider);
     await repository.uploadPaymentProof(orderId, filePath);
-    await refresh();
   }
 }

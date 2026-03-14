@@ -1,11 +1,19 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:crypto/crypto.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../courses/data/models/course_model.dart';
 import '../../data/models/cart_item_model.dart';
 import '../../../../features/orders/data/models/order_model.dart';
 import '../../../../features/orders/domain/repositories/order_repository.dart';
 import 'package:sparkbit/features/orders/presentation/providers/orders_provider.dart';
+
+const String _legacyCartStorageKey = 'cart_items_v1';
+const String _tokenScopedCartStoragePrefix = 'cart_items_v2_';
+const String _userScopedCartStoragePrefix = 'cart_items_v3_user_';
+const String _currentUserIdKey = 'current_user_id';
 
 // Cart State
 class CartState {
@@ -59,7 +67,90 @@ class CartNotifier extends StateNotifier<CartState> {
   final OrderRepository _orderRepository;
   final Ref _ref;
 
-  CartNotifier(this._orderRepository, this._ref) : super(CartState());
+  CartNotifier(this._orderRepository, this._ref) : super(CartState()) {
+    _loadCartFromStorage();
+  }
+
+  bool _isGuest(SharedPreferences prefs) {
+    final userId = prefs.getInt(_currentUserIdKey);
+    return userId == null || userId <= 0;
+  }
+
+  String _buildScopedCartStorageKey(SharedPreferences prefs) {
+    final userId = prefs.getInt(_currentUserIdKey);
+    if (userId == null || userId <= 0) return '';
+    return '$_userScopedCartStoragePrefix$userId';
+  }
+
+  String? _buildOldTokenScopedKey(SharedPreferences prefs) {
+    final token = prefs.getString('access_token');
+    if (token == null || token.isEmpty) return null;
+    final tokenHash = sha1.convert(utf8.encode(token)).toString();
+    return '$_tokenScopedCartStoragePrefix$tokenHash';
+  }
+
+  Future<void> _loadCartFromStorage() async {
+    try {
+      final prefs = getIt<SharedPreferences>();
+
+      // Guest cart should always start empty and never persist.
+      if (_isGuest(prefs)) {
+        state = CartState();
+        return;
+      }
+
+      final scopedKey = _buildScopedCartStorageKey(prefs);
+      String? raw = prefs.getString(scopedKey);
+
+      // One-time migration from legacy unscoped key.
+      if ((raw == null || raw.isEmpty) &&
+          prefs.containsKey(_legacyCartStorageKey)) {
+        raw = prefs.getString(_legacyCartStorageKey);
+        if (raw != null && raw.isNotEmpty) {
+          await prefs.setString(scopedKey, raw);
+          await prefs.remove(_legacyCartStorageKey);
+        }
+      }
+
+      // Migration from old token-scoped keys (v2) to user-scoped key (v3).
+      final oldTokenKey = _buildOldTokenScopedKey(prefs);
+      if ((raw == null || raw.isEmpty) &&
+          oldTokenKey != null &&
+          prefs.containsKey(oldTokenKey)) {
+        raw = prefs.getString(oldTokenKey);
+        if (raw != null && raw.isNotEmpty) {
+          await prefs.setString(scopedKey, raw);
+          await prefs.remove(oldTokenKey);
+        }
+      }
+
+      if (raw == null || raw.isEmpty) return;
+
+      final decoded = jsonDecode(raw) as List<dynamic>;
+      final items = decoded
+          .map(
+            (item) =>
+                CartItemModel.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+
+      state = state.copyWith(items: items, error: null);
+    } catch (_) {
+      // If cache is corrupted, clear it and continue with empty cart.
+      final prefs = getIt<SharedPreferences>();
+      final scopedKey = _buildScopedCartStorageKey(prefs);
+      await prefs.remove(scopedKey);
+    }
+  }
+
+  Future<void> _persistCartItems() async {
+    final prefs = getIt<SharedPreferences>();
+    if (_isGuest(prefs)) return;
+
+    final scopedKey = _buildScopedCartStorageKey(prefs);
+    final payload = jsonEncode(state.items.map((e) => e.toJson()).toList());
+    await prefs.setString(scopedKey, payload);
+  }
 
   // Add course to cart
   void addToCart(CourseModel course) {
@@ -92,6 +183,7 @@ class CartNotifier extends StateNotifier<CartState> {
       error: null,
       lastOrder: null, // Reset lastOrder when adding new items
     );
+    _persistCartItems();
   }
 
   // Remove course from cart
@@ -100,11 +192,13 @@ class CartNotifier extends StateNotifier<CartState> {
       items: state.items.where((item) => item.course.id != courseId).toList(),
       error: null,
     );
+    _persistCartItems();
   }
 
   // Clear cart
   void clearCart() {
     state = state.copyWith(items: [], error: null);
+    _persistCartItems();
   }
 
   // Create order
@@ -130,6 +224,7 @@ class CartNotifier extends StateNotifier<CartState> {
         items: [], // Clear cart after successful order
         error: null,
       );
+      _persistCartItems();
     } on DioException catch (e) {
       String errorMessage = 'Connection error';
       if (e.response?.data != null) {
@@ -142,12 +237,14 @@ class CartNotifier extends StateNotifier<CartState> {
         items: [], // Clear cart even on failure as requested
         error: errorMessage,
       );
+      _persistCartItems();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         items: [], // Clear cart even on failure as requested
         error: 'Unexpected error occurred',
       );
+      _persistCartItems();
     }
   }
 
@@ -164,6 +261,7 @@ class CartNotifier extends StateNotifier<CartState> {
   // Full reset: clears items + lastOrder + error
   void resetCart() {
     state = CartState(); // Back to fresh initial state
+    _persistCartItems();
   }
 }
 

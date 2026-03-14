@@ -7,6 +7,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
+import '../../../../core/widgets/shimmers/app_page_skeleton.dart';
 import '../providers/notifications_provider.dart';
 import '../../data/models/notification_model.dart';
 import 'package:intl/intl.dart';
@@ -110,10 +111,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             },
           );
         },
-        loading: () => const Padding(
-          padding: EdgeInsets.all(20),
-          child: AppLoadingIndicator(),
-        ),
+        loading: () => const AppPageSkeleton(itemCount: 6, cardHeight: 110),
         error: (error, stack) => ErrorView(
           error: error,
           onRetry: () => ref.refresh(notificationsProvider(1)),

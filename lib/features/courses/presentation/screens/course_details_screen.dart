@@ -18,6 +18,7 @@ import 'package:sparkbit/core/network/models/paginated_data.dart';
 import 'package:sparkbit/core/constants/app_routes.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
+import 'package:sparkbit/core/widgets/app_network_image.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../cart/presentation/widgets/cart_badge_icon.dart';
 import '../../../cart/presentation/widgets/add_to_cart_button.dart';
@@ -70,10 +71,10 @@ class CourseDetailsScreen extends ConsumerWidget {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          updatedCourse.coverImageUrl,
+                        AppNetworkImage(
+                          imageUrl: updatedCourse.coverImageUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorWidget: Container(
                             color: AppColors.primary.withOpacity(0.1),
                             child: const Icon(
                               Iconsax.image,
@@ -144,8 +145,22 @@ class CourseDetailsScreen extends ConsumerWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 16,
-                                    backgroundImage: NetworkImage(
-                                      updatedCourse.instructor.imageUrl,
+                                    child: ClipOval(
+                                      child: AppNetworkImage(
+                                        imageUrl:
+                                            updatedCourse.instructor.imageUrl,
+                                        width: 32,
+                                        height: 32,
+                                        fit: BoxFit.cover,
+                                        errorWidget: Icon(
+                                          Icons.person_rounded,
+                                          size: 16,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withOpacity(0.35),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -285,7 +300,21 @@ class _OverviewTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  backgroundImage: NetworkImage(course.instructor.imageUrl),
+                  child: ClipOval(
+                    child: AppNetworkImage(
+                      imageUrl: course.instructor.imageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorWidget: Icon(
+                        Icons.person_rounded,
+                        size: 28,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.35),
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(

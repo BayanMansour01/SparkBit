@@ -12,6 +12,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
   final SharedPreferences sharedPreferences;
 
   static const String tokenKey = 'access_token';
+  static const String currentUserIdKey = 'current_user_id';
 
   AuthenticationRepositoryImpl({
     required this.remoteDataSource,
@@ -29,6 +30,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
 
       // Save dummy token for mock session
       await sharedPreferences.setString(tokenKey, 'mock_access_token_123');
+      await sharedPreferences.setInt(currentUserIdKey, MockData.mockProfile.id);
 
       return MockData.mockProfile;
     }
@@ -53,6 +55,7 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
 
       // Save access token
       await sharedPreferences.setString(tokenKey, authResponse.accessToken);
+      await sharedPreferences.setInt(currentUserIdKey, authResponse.user.id);
 
       return authResponse.user;
     } catch (e) {
@@ -84,5 +87,6 @@ class AuthenticationRepositoryImpl implements AuthenticationRepository {
       }
     }
     await sharedPreferences.remove(tokenKey);
+    await sharedPreferences.remove(currentUserIdKey);
   }
 }

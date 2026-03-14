@@ -14,6 +14,10 @@ class AppButton extends StatelessWidget {
   final double? width;
   final double height;
   final double? fontSize;
+  final bool enableShadow;
+  final double shadowOpacity;
+  final double shadowBlurRadius;
+  final Offset shadowOffset;
 
   const AppButton({
     super.key,
@@ -25,6 +29,10 @@ class AppButton extends StatelessWidget {
     this.width,
     this.height = 56,
     this.fontSize,
+    this.enableShadow = true,
+    this.shadowOpacity = 0.3,
+    this.shadowBlurRadius = 12,
+    this.shadowOffset = const Offset(0, 6),
   });
 
   @override
@@ -67,13 +75,13 @@ class AppButton extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          boxShadow: onPressed == null
+          boxShadow: (onPressed == null || !enableShadow)
               ? []
               : [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: AppColors.primary.withOpacity(shadowOpacity),
+                    blurRadius: shadowBlurRadius,
+                    offset: shadowOffset,
                   ),
                 ],
         );

@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../providers/auth_provider.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
+import '../../../../core/widgets/app_loading_overlay.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../courses/presentation/providers/courses_provider.dart';
@@ -94,12 +95,13 @@ class SignInScreen extends ConsumerWidget {
 
                     AppButton(
                       text: 'Continue with Google',
-                      isLoading: authState.isLoading,
-                      onPressed: () {
-                        ref
-                            .read(authControllerProvider.notifier)
-                            .loginWithGoogle();
-                      },
+                      onPressed: authState.isLoading
+                          ? null
+                          : () {
+                              ref
+                                  .read(authControllerProvider.notifier)
+                                  .loginWithGoogle();
+                            },
                       icon: Icons
                           .login_rounded, // Better to use a generic icon if Image.network is too complex for AppButton right now
                     ),
@@ -108,9 +110,11 @@ class SignInScreen extends ConsumerWidget {
                     AppButton(
                       text: 'Continue as Guest',
                       variant: AppButtonVariant.secondary,
-                      onPressed: () {
-                        context.go(AppRoutes.home);
-                      },
+                      onPressed: authState.isLoading
+                          ? null
+                          : () {
+                              context.go(AppRoutes.home);
+                            },
                     ),
 
                     const SizedBox(height: 32),
@@ -122,9 +126,13 @@ class SignInScreen extends ConsumerWidget {
             ),
           ),
           if (authState.isLoading)
-            Container(
-              color: Colors.black54,
-              child: const AppLoadingIndicator(),
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: AppLoadingOverlay(
+                  title: 'Signing You In',
+                  subtitle: 'Please wait while we prepare your session.',
+                ),
+              ),
             ),
         ],
       ),

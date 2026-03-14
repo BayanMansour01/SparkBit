@@ -1,7 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:sparkbit/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -13,6 +13,7 @@ import 'package:sparkbit/core/constants/app_routes.dart';
 import 'package:sparkbit/features/courses/data/models/course_model.dart';
 import 'package:sparkbit/features/courses/presentation/providers/courses_provider.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
+import '../../../../core/widgets/app_network_image.dart';
 
 /// Courses screen with filtering and search
 class CoursesScreen extends ConsumerWidget {
@@ -142,10 +143,12 @@ class CoursesScreen extends ConsumerWidget {
   Widget _buildCategoryTabs(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final selectedCategoryId = ref.watch(selectedCategoryIdProvider);
+    final isSmall = MediaQuery.sizeOf(context).width < 360;
+    final tabHeight = isSmall ? 40.0 : 45.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AppSizes.space20),
-      height: 45,
+      height: tabHeight,
       child: categoriesAsync.when(
         data: (paginatedData) {
           final categories = paginatedData.data;
@@ -184,7 +187,7 @@ class CoursesScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: AppLoadingIndicator(size: 20)),
+        loading: () => const _ChipRowSkeleton(height: 45, itemCount: 4),
         error: (err, stack) => ErrorView(
           error: err,
           onRetry: () => ref.refresh(categoriesProvider),
@@ -199,11 +202,12 @@ class CoursesScreen extends ConsumerWidget {
 
     final subCategoriesAsync = ref.watch(subCategoriesProvider);
     final selectedSubCategoryId = ref.watch(selectedSubCategoryIdProvider);
+    final isSmall = MediaQuery.sizeOf(context).width < 360;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 300),
       child: Container(
-        height: 50,
+        height: isSmall ? 44 : 50,
         margin: const EdgeInsets.only(bottom: AppSizes.paddingLg),
         child: subCategoriesAsync.when(
           data: (paginatedData) {
@@ -226,7 +230,10 @@ class CoursesScreen extends ConsumerWidget {
                 return ChoiceChip(
                   label: Text(
                     subCategory.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
+                      fontSize: isSmall ? AppSizes.fontXs : AppSizes.fontSm,
                       color: isSelected
                           ? Colors.white
                           : Theme.of(context).colorScheme.onSurface,
@@ -244,6 +251,10 @@ class CoursesScreen extends ConsumerWidget {
                   backgroundColor: Theme.of(
                     context,
                   ).colorScheme.surfaceContainerHighest,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: isSmall
+                      ? const VisualDensity(horizontal: -2, vertical: -2)
+                      : VisualDensity.standard,
                   side: BorderSide.none,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusLg),
@@ -252,13 +263,7 @@ class CoursesScreen extends ConsumerWidget {
               },
             );
           },
-          loading: () => const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          ),
+          loading: () => const _ChipRowSkeleton(height: 42, itemCount: 5),
           error: (err, stack) => const SizedBox.shrink(),
         ),
       ),
@@ -271,13 +276,15 @@ class CoursesScreen extends ConsumerWidget {
     bool isSelected,
     VoidCallback onTap,
   ) {
+    final isSmall = MediaQuery.sizeOf(context).width < 360;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSizes.space20,
-          vertical: AppSizes.space12,
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmall ? 14 : AppSizes.space20,
+          vertical: isSmall ? AppSizes.space10 : AppSizes.space12,
         ),
         decoration: BoxDecoration(
           color: isSelected
@@ -292,8 +299,10 @@ class CoursesScreen extends ConsumerWidget {
         ),
         child: Text(
           title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.outfit(
-            fontSize: AppSizes.fontBase,
+            fontSize: isSmall ? AppSizes.fontSm : AppSizes.fontBase,
             fontWeight: FontWeight.w600,
             color: isSelected
                 ? Theme.of(context).colorScheme.surface
@@ -453,16 +462,14 @@ class _CourseCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppSizes.radiusMd,
                           ),
-                          child: Image.network(
-                            course.coverImageUrl,
+                          child: AppNetworkImage(
+                            imageUrl: course.coverImageUrl,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Icon(
-                                Icons.broken_image_rounded,
-                                color: Colors.white,
-                                size: AppSizes.iconLg,
-                              );
-                            },
+                            errorWidget: const Icon(
+                              Icons.broken_image_rounded,
+                              color: Colors.white,
+                              size: AppSizes.iconLg,
+                            ),
                           ),
                         )
                       : const Icon(
@@ -583,6 +590,45 @@ class _CourseCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ChipRowSkeleton extends StatelessWidget {
+  final double height;
+  final int itemCount;
+
+  const _ChipRowSkeleton({required this.height, this.itemCount = 4});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+    return SizedBox(
+      height: height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSizes.space8),
+        itemBuilder: (context, index) {
+          final widths = [72.0, 92.0, 110.0, 88.0, 96.0];
+          return Shimmer.fromColors(
+            baseColor: baseColor,
+            highlightColor: highlightColor,
+            child: Container(
+              width: widths[index % widths.length],
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(AppSizes.radius2xl),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

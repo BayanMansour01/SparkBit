@@ -6,6 +6,6 @@ final orderDetailProvider = FutureProvider.family<OrderModel, int>((
   ref,
   orderId,
 ) async {
-  final repository = ref.watch(orderRepositoryProvider);
+  final repository = ref.read(orderRepositoryProvider);
   return repository.getOrderById(orderId);
 });

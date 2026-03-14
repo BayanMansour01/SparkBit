@@ -9,6 +9,7 @@ import '../../data/models/lesson_model.dart';
 import 'courses_provider.dart';
 
 import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../home/presentation/providers/home_provider.dart';
 
 // State for the Lesson Viewer
 class LessonViewState {
@@ -95,17 +96,17 @@ class LessonViewController
   }
 
   void _invalidateAll(Ref ref, int courseId) {
-    // 1. My Courses list screen - Silent Refresh
+    // 1. My Courses list screen - Direct refresh for immediate update
     ref.read(myCoursesProvider.notifier).refreshData();
 
-    // 2. Courses list (Categories, Search) - Silent Refresh
+    // 2. Home Popular Courses - Invalidate to trigger rebuild with fresh data
+    ref.invalidate(homePopularCoursesProvider);
+
+    // 3. Courses list (Categories, Search) - Silent Refresh
     ref.read(coursesProvider.notifier).refreshData();
 
-    // 3. Specific course details (Lessons list) - Silent Refresh
-    // Removed to prevent redundant requests on exit. rely on optimistic updates.
-    // ref.read(lessonsProvider(courseId).notifier).refreshData();
-
-    // Note: HomeData updates automatically as it watches the above providers
+    // 4. Home page data provider - Invalidate to rebuild with updated dependencies
+    ref.invalidate(homeDataProvider);
   }
 
   void updateProgress(double currentPositionRatio, double watchedRatio) {

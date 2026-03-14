@@ -594,8 +594,11 @@ final myCoursesProvider =
 /// This ensures that when lists are updated (e.g. progress change),
 /// the details screen updates automatically.
 final courseByIdProvider = Provider.family<CourseModel?, int>((ref, courseId) {
+  // Use `ref.read` to get the current state without subscribing to changes.
+  // This prevents re-fetching when the UI rebuilds for other reasons.
+
   // 1. Check My Courses (Priority for progress updates)
-  final myCoursesState = ref.watch(myCoursesProvider);
+  final myCoursesState = ref.read(myCoursesProvider);
   if (myCoursesState.hasValue && myCoursesState.value != null) {
     try {
       return myCoursesState.value!.data.firstWhere((c) => c.id == courseId);
@@ -603,7 +606,7 @@ final courseByIdProvider = Provider.family<CourseModel?, int>((ref, courseId) {
   }
 
   // 2. Check All Courses
-  final allCoursesState = ref.watch(coursesProvider);
+  final allCoursesState = ref.read(coursesProvider);
   if (allCoursesState.hasValue && allCoursesState.value != null) {
     try {
       return allCoursesState.value!.data.firstWhere((c) => c.id == courseId);

@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/providers/theme_provider.dart';
 import '../../../../core/widgets/app_loading_indicator.dart';
+import '../../../../core/widgets/app_loading_overlay.dart';
 import '../../../../core/widgets/error_view.dart';
+import '../../../../core/widgets/shimmers/app_page_skeleton.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../app_config/presentation/providers/app_config_provider.dart';
@@ -154,12 +155,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: AppLoadingIndicator(),
-        ),
-      ),
+      loading: () => const AppPageSkeleton(itemCount: 3, cardHeight: 120),
       error: (err, stack) => ErrorView(
         error: err,
         onRetry: () => ref.refresh(userProfileProvider),
@@ -310,8 +306,11 @@ class ProfileScreen extends ConsumerWidget {
                           context: context,
                           barrierDismissible: false,
                           useRootNavigator: true, // Explicitly use root
-                          builder: (ctx) =>
-                              const Center(child: AppLoadingIndicator()),
+                          builder: (ctx) => const AppLoadingOverlay(
+                            title: 'Signing You Out',
+                            subtitle:
+                                'Saving your preferences and clearing session.',
+                          ),
                         );
 
                         try {

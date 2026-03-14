@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/widgets/app_network_image.dart';
 import '../../../../core/widgets/error_view.dart';
 import '../../../../core/widgets/shimmers/grid_shimmer.dart';
 import '../../data/models/category_model.dart';
@@ -315,17 +315,17 @@ class _SubCategoryCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
-                  child: CachedNetworkImage(
+                  child: AppNetworkImage(
                     imageUrl: subCategory.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(
+                    placeholder: Center(
                       child: Icon(
                         Icons.grid_view_rounded,
                         size: 40,
                         color: color,
                       ),
                     ),
-                    errorWidget: (context, url, error) => Center(
+                    errorWidget: Center(
                       child: Icon(
                         Icons.grid_view_rounded,
                         size: 40,
