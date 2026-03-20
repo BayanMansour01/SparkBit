@@ -6,7 +6,7 @@ import 'package:sparkbit/core/constants/app_colors.dart';
 import 'package:sparkbit/core/constants/app_sizes.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
 import 'package:sparkbit/core/widgets/app_network_image.dart';
-import 'package:sparkbit/core/widgets/shimmers/app_page_skeleton.dart';
+import 'package:sparkbit/core/widgets/shimmers/app_shimmer.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import 'package:sparkbit/features/profile/presentation/providers/profile_provider.dart';
 import 'package:sparkbit/features/profile/presentation/providers/edit_profile_provider.dart';
@@ -153,8 +153,181 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ],
         ),
-        loading: () => const AppPageSkeleton(itemCount: 3, cardHeight: 180),
+        loading: () => _buildLoadingState(context),
         error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    final palette = AppShimmer.palette(context);
+
+    return Stack(
+      children: [
+        _buildBackground(context),
+        SafeArea(
+          child: SingleChildScrollView(
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(AppSizes.paddingLg),
+            child: AppShimmer(
+              child: Column(
+                children: [
+                  const SizedBox(height: AppSizes.space20),
+                  _skeletonLine(
+                    width: 180,
+                    height: 34,
+                    color: palette.placeholder,
+                    radius: AppSizes.radiusSm,
+                  ),
+                  const SizedBox(height: AppSizes.space12),
+                  _skeletonLine(
+                    width: 260,
+                    height: 14,
+                    color: palette.placeholder,
+                  ),
+                  const SizedBox(height: AppSizes.space48),
+                  _buildProfileSkeletonCard(context, palette),
+                  const SizedBox(height: AppSizes.space48),
+                  _buildFormSkeletonCard(context, palette),
+                  const SizedBox(height: AppSizes.space32),
+                  _buildButtonSkeleton(palette),
+                  const SizedBox(height: AppSizes.space32),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileSkeletonCard(
+    BuildContext context,
+    AppShimmerPalette palette,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.space32),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius2xl),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        children: [
+          _skeletonLine(width: 132, height: 22, color: palette.placeholder),
+          const SizedBox(height: AppSizes.space24),
+          Container(
+            width: 140,
+            height: 140,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: palette.placeholder,
+            ),
+          ),
+          const SizedBox(height: AppSizes.space16),
+          _skeletonLine(width: 170, height: 14, color: palette.placeholder),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormSkeletonCard(
+    BuildContext context,
+    AppShimmerPalette palette,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSizes.space24),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius2xl),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: palette.placeholder,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                ),
+              ),
+              const SizedBox(width: AppSizes.space12),
+              _skeletonLine(width: 170, height: 22, color: palette.placeholder),
+            ],
+          ),
+          const SizedBox(height: AppSizes.space24),
+          _skeletonLine(width: 90, height: 12, color: palette.placeholder),
+          const SizedBox(height: AppSizes.space8),
+          _skeletonInput(palette),
+          const SizedBox(height: AppSizes.space20),
+          _skeletonLine(width: 100, height: 12, color: palette.placeholder),
+          const SizedBox(height: AppSizes.space8),
+          _skeletonInput(palette),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButtonSkeleton(AppShimmerPalette palette) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        border: Border.all(color: palette.border),
+      ),
+      child: Center(
+        child: _skeletonLine(
+          width: 140,
+          height: 16,
+          color: palette.placeholder,
+        ),
+      ),
+    );
+  }
+
+  Widget _skeletonInput(AppShimmerPalette palette) {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        border: Border.all(color: palette.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.space20),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: _skeletonLine(
+            width: 150,
+            height: 14,
+            color: palette.placeholder,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _skeletonLine({
+    required double width,
+    required double height,
+    required Color color,
+    double radius = 8,
+  }) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }

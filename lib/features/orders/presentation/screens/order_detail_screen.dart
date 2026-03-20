@@ -463,6 +463,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     bool isDark,
   ) {
     final statusColor = _getStatusColor(order.status.value);
+    final canEditPaymentProof = order.status.value.toLowerCase() == 'pending';
     final cardColor = isDark ? AppColors.darkCard : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
     final secondaryTextColor = isDark
@@ -668,25 +669,25 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                     color: textColor,
                   ),
                 ),
-                // Edit Button
-                TextButton.icon(
-                  onPressed: () => _pickAndUploadProof(context, ref),
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  label: Text(
-                    'Edit',
-                    style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                if (canEditPaymentProof)
+                  TextButton.icon(
+                    onPressed: () => _pickAndUploadProof(context, ref),
+                    icon: const Icon(Icons.edit_rounded, size: 18),
+                    label: Text(
+                      'Edit',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
                   ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -756,23 +757,23 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                         ),
                       ),
                     ),
-                    // Edit overlay on hover (mobile tap hint)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.tap_and_play,
-                          color: Colors.white,
-                          size: 18,
+                    if (canEditPaymentProof)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
