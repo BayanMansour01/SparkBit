@@ -10,9 +10,33 @@ import 'core/providers/theme_provider.dart';
 import 'core/di/service_locator.dart';
 import 'features/app_config/presentation/widgets/app_config_wrapper.dart';
 import 'router/app_router.dart';
+import 'core/security/security_checker.dart';
+import 'core/security/emulator_blocked_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ═══════════════════════════════════════════════════════════════
+  // 🛡️ SECURITY: Emulator Detection (blocking — runs first)
+  // ═══════════════════════════════════════════════════════════════
+  try {
+    final emulatorReason = await SecurityChecker.checkIfEmulator().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => null,
+    );
+
+    if (emulatorReason != null) {
+      final deviceInfo = await SecurityChecker.getDeviceInfoString();
+      debugPrint('🛡️ BLOCKED: Emulator detected — $emulatorReason');
+      runApp(EmulatorBlockedScreen(
+        reason: emulatorReason,
+        deviceInfo: deviceInfo,
+      ));
+      return; // Stop here — don't initialize the rest of the app
+    }
+  } catch (e) {
+    debugPrint('🛡️ Security: Emulator check error (ignored): $e');
+  }
 
   // Initialize SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
