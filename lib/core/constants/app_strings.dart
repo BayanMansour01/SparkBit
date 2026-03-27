@@ -5,7 +5,7 @@ class AppStrings {
   AppStrings._();
 
   // App Info
-  static const String appName = 'Yuna';
+  static const String appName = 'Sparkbit';
   static const String appTagline = 'Learn Anytime, Anywhere';
 
   // Currency

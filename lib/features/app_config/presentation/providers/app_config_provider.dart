@@ -31,7 +31,7 @@ final appConfigProvider = FutureProvider.autoDispose<AppConfigModel>((
 /// Provider for current app version
 final currentAppVersionProvider = FutureProvider<String>((ref) async {
   final packageInfo = await PackageInfo.fromPlatform();
-  return packageInfo.version;
+  return '${packageInfo.version}+${packageInfo.buildNumber}';
 });
 final updateRequiredProvider = FutureProvider<bool>((ref) async {
   final config = await ref.watch(appConfigProvider.future);

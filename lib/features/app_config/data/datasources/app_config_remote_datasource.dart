@@ -22,15 +22,34 @@ class AppConfigRemoteDataSourceImpl implements AppConfigRemoteDataSource {
       final responseData = response.data as Map<String, dynamic>;
       final configData = responseData['data']['data'] as Map<String, dynamic>;
 
-      // Debug: Print the raw config data
-      log('📦 Raw config data from API:');
-      log(configData.toString());
-      log('  maintenance_mode value: ${configData['maintenance_mode']}');
-      log(
-        '  maintenance_mode type: ${configData['maintenance_mode'].runtimeType}',
-      );
+      final model = AppConfigModel.fromJson(configData);
 
-      return AppConfigModel.fromJson(configData);
+      log('━━━━━━━━━━ AppConfig loaded from backend ━━━━━━━━━━');
+      log(
+        '  [RAW]  maintenance_mode     : ${configData['maintenance_mode']} (${configData['maintenance_mode'].runtimeType})',
+      );
+      log(
+        '  [RAW]  latest_android       : ${configData['latest_android_version']}',
+      );
+      log(
+        '  [RAW]  min_android          : ${configData['latest_supported_android_version']}',
+      );
+      log(
+        '  [RAW]  latest_ios           : ${configData['latest_ios_version']}',
+      );
+      log(
+        '  [RAW]  min_ios              : ${configData['latest_supported_ios_version']}',
+      );
+      log('  ─────────────────────────────────────────────────');
+      log('  [PARSED]  isMaintenance     : ${model.isMaintenance}');
+      log('  [PARSED]  maintenanceMsg    : ${model.maintenanceMessage}');
+      log('  [PARSED]  minVersion        : ${model.minVersion}');
+      log('  [PARSED]  latestVersion     : ${model.latestVersion}');
+      log('  [PARSED]  updateUrl         : ${model.updateUrl}');
+      log('  [PARSED]  directAndroidLink : ${model.directAndroidLink}');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      return model;
     } catch (e) {
       log('❌ Error fetching config: $e');
       rethrow;

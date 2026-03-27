@@ -1481,7 +1481,7 @@ class _GuestWelcomeScreen extends StatelessWidget {
 
                     // Title
                     Text(
-                      'Welcome to Yuna',
+                      'Welcome to Sparkbit',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.outfit(
                         fontSize: isSmall ? 26 : 32,

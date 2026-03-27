@@ -50,7 +50,7 @@ class YunaApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'Yuna',
+      title: 'Sparkbit',
       debugShowCheckedModeBanner: false,
 
       // Themes

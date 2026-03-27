@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sparkbit/core/network/api_endpoints.dart';
@@ -27,6 +29,7 @@ class DioClient {
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+          log('token: ${token.toString()}');
           return handler.next(options);
         },
       ),

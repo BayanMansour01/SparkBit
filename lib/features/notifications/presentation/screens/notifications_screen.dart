@@ -297,21 +297,28 @@ class _NotificationCard extends StatelessWidget {
   String _formatDate(String? dateStr) {
     if (dateStr == null) return '';
     try {
-      final date = DateTime.parse(dateStr);
+      // Parse as UTC (add Z if missing so Dart treats it correctly),
+      // then convert to local time ONLY for comparison — display is untouched.
+      final normalised =
+          dateStr.endsWith('Z') ? dateStr : '${dateStr}Z';
+      final dateUtc = DateTime.parse(normalised);       // always UTC
+      final dateLocal = dateUtc.toLocal();              // device local time
       final now = DateTime.now();
-      final difference = now.difference(date);
+      final difference = now.difference(dateLocal);
 
-      if (difference.inMinutes < 60) {
+      if (difference.inSeconds < 60) {
+        return 'Just now';
+      } else if (difference.inMinutes < 60) {
         return '${difference.inMinutes}m ago';
       } else if (difference.inHours < 24) {
         return '${difference.inHours}h ago';
       } else if (difference.inDays < 7) {
         return '${difference.inDays}d ago';
       } else {
-        return DateFormat('MMM dd, yyyy').format(date);
+        return DateFormat('MMM dd, yyyy').format(dateLocal);
       }
     } catch (e) {
-      return dateStr.split(' ').first;
+      return dateStr.split('T').first; // safer fallback than split(' ')
     }
   }
 }

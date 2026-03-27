@@ -35,7 +35,7 @@ class CourseDetailsScreen extends ConsumerWidget {
     final updatedCourse = ref.watch(courseByIdProvider(course.id)) ?? course;
 
     final lessonsAsync = ref.watch(lessonsProvider(updatedCourse.id));
-
+    log(updatedCourse.toString());
     return DefaultTabController(
       length: 2,
       child: Scaffold(

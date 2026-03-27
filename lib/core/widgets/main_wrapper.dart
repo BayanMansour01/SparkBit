@@ -1,10 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../constants/app_routes.dart';
 import '../resources/values_manager.dart';
+import '../utils/dialog_utils.dart';
 import 'app_update_listener.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
 import '../../features/notifications/presentation/providers/notifications_provider.dart';
@@ -17,6 +19,10 @@ import '../utils/snackbar_utils.dart';
 class MainWrapper extends ConsumerStatefulWidget {
   final StatefulNavigationShell navigationShell;
 
+  /// Static callback for the BackButtonDispatcher to call when on root tabs.
+  /// Set by _MainWrapperState in initState, cleared in dispose.
+  static Future<bool> Function()? handleBackPress;
+
   const MainWrapper({super.key, required this.navigationShell});
 
   @override
@@ -25,17 +31,58 @@ class MainWrapper extends ConsumerStatefulWidget {
 
 class _MainWrapperState extends ConsumerState<MainWrapper>
     with WidgetsBindingObserver {
+  /// Tab navigation history stack.
+  /// Each tab switch pushes the previous index.
+  /// Back button pops from this stack to return to the previous tab.
+  /// When empty → show exit dialog.
+  final List<int> _tabHistory = [];
+
+  /// Flag to prevent didUpdateWidget from adding to history during back navigation
+  bool _isGoingBack = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _setupNotificationListeners();
+    // Register the back press handler for the BackButtonDispatcher
+    MainWrapper.handleBackPress = _onBackPressed;
   }
 
   @override
   void dispose() {
+    MainWrapper.handleBackPress = null;
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Detect tab changes from ANY source (nav bar, context.go(), etc.)
+  @override
+  void didUpdateWidget(covariant MainWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final newIndex = widget.navigationShell.currentIndex;
+    final oldIndex = oldWidget.navigationShell.currentIndex;
+
+    // Tab changed — push old index to history
+    if (newIndex != oldIndex) {
+      if (_isGoingBack) {
+        // Back navigation — don't add to history (already handled by _onBackPressed)
+        _isGoingBack = false;
+        debugPrint('📱 Tab back: $oldIndex → $newIndex | History: $_tabHistory');
+      } else {
+        // Forward navigation — track in history
+        if (_tabHistory.isEmpty || _tabHistory.last != oldIndex) {
+          _tabHistory.add(oldIndex);
+        }
+
+        // Cap stack size to prevent unbounded growth
+        if (_tabHistory.length > 10) {
+          _tabHistory.removeAt(0);
+        }
+
+        debugPrint('📱 Tab changed: $oldIndex → $newIndex | History: $_tabHistory');
+      }
+    }
   }
 
   @override
@@ -179,10 +226,44 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
   }
 
   void _onTap(BuildContext context, int index) {
-    widget.navigationShell.goBranch(
-      index,
-      initialLocation: index == widget.navigationShell.currentIndex,
-    );
+    final currentIndex = widget.navigationShell.currentIndex;
+
+    // If tapping the same tab, reset it to initial location
+    if (index == currentIndex) {
+      widget.navigationShell.goBranch(index, initialLocation: true);
+      return;
+    }
+
+    // History tracking is handled by didUpdateWidget automatically
+    widget.navigationShell.goBranch(index, initialLocation: false);
+  }
+
+  /// Handle back button press (called from BackButtonDispatcher):
+  /// - If history has entries → go back to previous tab
+  /// - If stack is empty → show exit dialog
+  /// Returns true = event consumed, false = not handled.
+  Future<bool> _onBackPressed() async {
+    debugPrint('🔙 _onBackPressed | History: $_tabHistory');
+
+    if (_tabHistory.isNotEmpty) {
+      // Pop the last tab from history and navigate to it
+      final previousIndex = _tabHistory.removeLast();
+      debugPrint(
+        '🔙 Going back to tab $previousIndex | Remaining: $_tabHistory',
+      );
+      _isGoingBack = true; // Prevent didUpdateWidget from re-adding to history
+      widget.navigationShell.goBranch(previousIndex, initialLocation: false);
+      return true;
+    } else {
+      // Stack is empty → show exit dialog
+      debugPrint('🔙 Stack empty → showing exit dialog');
+      if (!mounted) return false;
+      final shouldExit = await DialogUtils.showExitDialog(context);
+      if (shouldExit && mounted) {
+        SystemNavigator.pop();
+      }
+      return true; // Consumed (dialog was shown)
+    }
   }
 
   @override

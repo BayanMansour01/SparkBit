@@ -1,4 +1,4 @@
-# Yuna Flutter App - Copilot Instructions
+# Sparkbit Flutter App - Copilot Instructions
 
 ## 🏛️ Big Picture Architecture
 

@@ -301,7 +301,7 @@ class AppRouter {
   );
 }
 
-/// Custom back button dispatcher that shows exit dialog on root tabs.
+/// Custom back button dispatcher that handles tab history on root tabs.
 class _ExitBackButtonDispatcher extends RootBackButtonDispatcher {
   final GlobalKey<NavigatorState> navigatorKey;
 
@@ -309,21 +309,22 @@ class _ExitBackButtonDispatcher extends RootBackButtonDispatcher {
 
   @override
   Future<bool> didPopRoute() async {
-    // If the root navigator can pop, there's a sub-page on top — let GoRouter handle it
-    if (navigatorKey.currentState?.canPop() == true) {
+    final canPop = navigatorKey.currentState?.canPop() ?? false;
+    final hasHandler = MainWrapper.handleBackPress != null;
+
+    debugPrint('🔙 Back pressed — canPop: $canPop, hasHandler: $hasHandler');
+
+    // Sub-page on root navigator (Settings, CourseDetails, etc.) — let GoRouter pop it
+    if (canPop) {
       return super.didPopRoute();
     }
 
-    // We're on a root tab — show exit confirmation
-    final context = navigatorKey.currentContext;
-    if (context != null && context.mounted) {
-      final shouldExit = await DialogUtils.showExitDialog(context);
-      if (shouldExit) {
-        SystemNavigator.pop();
-      }
-      return true;
+    // On a root tab — use MainWrapper's tab history handler
+    if (hasHandler) {
+      return await MainWrapper.handleBackPress!();
     }
 
-    return super.didPopRoute();
+    // Not on main screen (e.g., login) — let system handle
+    return false;
   }
 }

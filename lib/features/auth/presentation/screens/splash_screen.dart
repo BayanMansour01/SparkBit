@@ -85,7 +85,9 @@ class _SplashScreenState extends State<SplashScreen>
     _mainController.forward();
     _mainController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        _checkAuthAndNavigate();
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _checkAuthAndNavigate();
+        });
       }
     });
   }

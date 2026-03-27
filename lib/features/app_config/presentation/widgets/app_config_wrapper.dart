@@ -78,21 +78,42 @@ class AppConfigWrapper extends ConsumerWidget {
             name: 'AppConfigWrapper',
           );
 
-          // تحويل النسخ لأرقام للمقارنة الدقيقة (مثال: 1.0.0 -> 100)
-          final currentV = _parseVersion(currentVersion);
-          final minV = _parseVersion(config.minVersion);
+          // Robust comparison logic
+          final isUpdateRequired = _isVersionLower(
+            currentVersion,
+            config.minVersion,
+          );
+          final hasNewerVersion = _isVersionLower(
+            currentVersion,
+            config.latestVersion,
+          );
 
-          dev.log('  - Parsed currentV: $currentV', name: 'AppConfigWrapper');
-          dev.log('  - Parsed minV: $minV', name: 'AppConfigWrapper');
+          dev.log('🔍 [AppConfig Check]', name: 'AppConfigWrapper');
           dev.log(
-            '  - Need update? ${currentV < minV}',
+            '   - Device App Version : "$currentVersion"',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '   - Min Required (Min) : "${config.minVersion}"',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '   - Latest Version (New): "${config.latestVersion}"',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '   - Result: isUpdateRequired = $isUpdateRequired',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '   - Result: hasNewerVersion  = $hasNewerVersion (Optional)',
             name: 'AppConfigWrapper',
           );
 
-          // 3. فحص التحديث الإجباري
-          if (currentV < minV) {
+          // 3. فحص التحديث (سنغيرها هنا لتبرز الشاشة بمجرد وجود نسخة أحدث)
+          if (hasNewerVersion) {
             dev.log(
-              '✅ Update required, showing UpdateRequiredScreen',
+              '✅ Newer version available, showing UpdateRequiredScreen',
               name: 'AppConfigWrapper',
             );
             return UpdateRequiredScreen(
@@ -126,18 +147,45 @@ class AppConfigWrapper extends ConsumerWidget {
     );
   }
 
-  // دالة مساعدة لتحويل النسخة (String) إلى (int) للمقارنة الصحيحة
-  // يدعم: 1.0.0, 1.0.0+1, 1.2.3+45
-  int _parseVersion(String v) {
+  /// دالة قوية لمقارنة الإصدارات (Major.Minor.Patch+Build)
+  bool _isVersionLower(String current, String target) {
     try {
-      // إزالة build number إن وجد (كل شيء بعد +)
-      final versionOnly = v.split('+').first;
-      // إزالة النقاط وتحويله لرقم: 1.2.3 -> 123
-      final cleaned = versionOnly.replaceAll('.', '');
-      return int.tryParse(cleaned) ?? 0;
+      // 1. فصل النسخة الأساسية عن الـ build number
+      final currentFull = current.split('+');
+      final targetFull = target.split('+');
+
+      final currentParts = currentFull[0]
+          .split('.')
+          .map((e) => int.tryParse(e) ?? 0)
+          .toList();
+      final targetParts = targetFull[0]
+          .split('.')
+          .map((e) => int.tryParse(e) ?? 0)
+          .toList();
+
+      // 2. مقارنة الأجزاء الأساسية (1.0 vs 1.0.0)
+      final maxLength = currentParts.length > targetParts.length
+          ? currentParts.length
+          : targetParts.length;
+      for (var i = 0; i < maxLength; i++) {
+        final v1 = i < currentParts.length ? currentParts[i] : 0;
+        final v2 = i < targetParts.length ? targetParts[i] : 0;
+        if (v1 < v2) return true;
+        if (v1 > v2) return false;
+      }
+
+      // 3. إذا تساوت الأجزاء الأساسية، نقارن الـ Build Number إن وجد
+      final currentBuild = currentFull.length > 1
+          ? (int.tryParse(currentFull[1]) ?? 0)
+          : 0;
+      final targetBuild = targetFull.length > 1
+          ? (int.tryParse(targetFull[1]) ?? 0)
+          : 0;
+
+      return currentBuild < targetBuild;
     } catch (e) {
-      dev.log('⚠️  Error parsing version "$v": $e', name: 'AppConfigWrapper');
-      return 0;
+      dev.log('⚠️ Error comparing versions "$current" and "$target": $e');
+      return false;
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/network/models/paginated_data.dart';
 import '../../../../core/network/models/pagination_model.dart';
@@ -43,7 +44,16 @@ class CoursesRepositoryImpl implements CoursesRepository {
         page: page,
       );
       if (response.data != null) {
-        return response.data!;
+        final categories = response.data!;
+        debugPrint('══════════ CATEGORIES FROM BACKEND ══════════');
+        debugPrint('Total: ${categories.data.length}');
+        for (final cat in categories.data) {
+          debugPrint(
+            '  [${cat.id}] ${cat.name} → image_url: "${cat.imageUrl}"',
+          );
+        }
+        debugPrint('═════════════════════════════════════════════');
+        return categories;
       }
       throw Exception('Categories data is null');
     }
