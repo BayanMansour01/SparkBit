@@ -120,7 +120,7 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### في الـ Home Screen أو أي شاشة
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/cart_badge_icon.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/cart_badge_icon.dart';
 
 AppBar(
   title: Text('الكورسات'),
@@ -132,7 +132,7 @@ AppBar(
 
 ### في Course Details Screen
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/add_to_cart_button.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/add_to_cart_button.dart';
 
 // في نهاية الشاشة
 AddToCartButton(
@@ -143,7 +143,7 @@ AddToCartButton(
 
 ### فتح شاشة السلة مباشرة
 ```dart
-import 'package:yuna/features/cart/presentation/screens/cart_screen.dart';
+import 'package:sparkbit/features/cart/presentation/screens/cart_screen.dart';
 
 Navigator.push(
   context,

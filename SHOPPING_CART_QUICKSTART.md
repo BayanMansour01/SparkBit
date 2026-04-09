@@ -36,7 +36,7 @@
 في أي شاشة تريد إضافة أيقونة السلة (مثل الصفحة الرئيسية):
 
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/cart_badge_icon.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/cart_badge_icon.dart';
 
 AppBar(
   title: Text('الكورسات'),
@@ -51,7 +51,7 @@ AppBar(
 في `course_details_screen.dart` أو أي مكان تعرض فيه تفاصيل الكورس:
 
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/add_to_cart_button.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/add_to_cart_button.dart';
 
 // في body الشاشة
 AddToCartButton(

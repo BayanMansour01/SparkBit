@@ -3,7 +3,7 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseURl = "http://10.114.136.135:8000";
+  static const String baseURl = "http://10.184.210.95:8000";
   // Student Settings
   static const String studentSettings = '/student/settings/getAll';
 

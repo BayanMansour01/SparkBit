@@ -2,13 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/device_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
-import '../../../home/presentation/providers/home_provider.dart';
 
 /// Splash screen with highly animated coding theme
 class SplashScreen extends StatefulWidget {
@@ -55,8 +53,6 @@ class _SplashScreenState extends State<SplashScreen>
     '\$',
   ];
 
-  Future<void>? _homePrefetchFuture;
-
   @override
   void initState() {
     super.initState();
@@ -75,12 +71,6 @@ class _SplashScreenState extends State<SplashScreen>
 
     _setupAnimations();
     _generateSymbols();
-
-    // Warm up Home data while splash animation is running.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _startHomePrefetch();
-    });
 
     _mainController.forward();
     _mainController.addStatusListener((status) {
@@ -175,32 +165,6 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
-  void _startHomePrefetch() {
-    if (_homePrefetchFuture != null) return;
-
-    final container = ProviderScope.containerOf(context, listen: false);
-    _homePrefetchFuture = container
-        .read(homeDataProvider.future)
-        .then((_) {
-          debugPrint('Home prefetch completed during splash');
-        })
-        .catchError((error) {
-          debugPrint('Home prefetch failed during splash: $error');
-        });
-  }
-
-  Future<void> _awaitShortPrefetchWindow() async {
-    final future = _homePrefetchFuture;
-    if (future == null) return;
-
-    try {
-      // Keep navigation snappy; only wait a short time for warm-up.
-      await future.timeout(const Duration(milliseconds: 350));
-    } catch (_) {
-      // Ignore timeout/errors here and continue navigation.
-    }
-  }
-
   Future<void> _checkAuthAndNavigate() async {
     if (!mounted) return;
 
@@ -208,11 +172,7 @@ class _SplashScreenState extends State<SplashScreen>
     final token = prefs.getString('access_token');
 
     if (token != null && token.isNotEmpty) {
-      await _awaitShortPrefetchWindow();
-      if (!mounted) return;
-      getIt<DeviceService>().registerDeviceIfChanged(force: true).catchError((
-        e,
-      ) {
+      getIt<DeviceService>().registerDeviceIfChanged().catchError((e) {
         debugPrint('Device registration failed on startup: $e');
         return false;
       });
@@ -220,8 +180,6 @@ class _SplashScreenState extends State<SplashScreen>
     } else {
       // Guest Mode: Go to Home directly
       debugPrint('No token found, entering Guest Mode');
-      await _awaitShortPrefetchWindow();
-      if (!mounted) return;
       context.go(AppRoutes.home);
     }
   }
@@ -286,7 +244,7 @@ class _SplashScreenState extends State<SplashScreen>
                         _buildLetter('a', 2, textColor),
                         _buildLetter('r', 3, textColor),
                         _buildLetter('k', 4, primaryColor),
-                        // const SizedBox(width: 16),
+                        const SizedBox(width: 16),
                         _buildLetter('B', 5, primaryColor),
                         _buildLetter('i', 6, textColor),
                         _buildLetter('t', 7, primaryColor),

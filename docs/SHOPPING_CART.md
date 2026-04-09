@@ -132,7 +132,7 @@ CartState {
 ### 1. إضافة أيقونة السلة للـ AppBar
 
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/cart_badge_icon.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/cart_badge_icon.dart';
 
 AppBar(
   actions: [
@@ -144,7 +144,7 @@ AppBar(
 ### 2. إضافة زر "إضافة للسلة" في شاشة تفاصيل الكورس
 
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/add_to_cart_button.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/add_to_cart_button.dart';
 
 // Full button version
 AddToCartButton(
@@ -162,7 +162,7 @@ AddToCartButton(
 ### 3. فتح شاشة السلة
 
 ```dart
-import 'package:yuna/features/cart/presentation/screens/cart_screen.dart';
+import 'package:sparkbit/features/cart/presentation/screens/cart_screen.dart';
 
 Navigator.of(context).push(
   MaterialPageRoute(
@@ -175,7 +175,7 @@ Navigator.of(context).push(
 
 ```dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:yuna/features/cart/presentation/providers/cart_provider.dart';
+import 'package:sparkbit/features/cart/presentation/providers/cart_provider.dart';
 
 // In a ConsumerWidget
 ref.read(cartProvider.notifier).addToCart(courseModel);

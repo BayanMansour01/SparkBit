@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/widgets/app_network_image.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
-import '../../../../core/widgets/shimmers/grid_shimmer.dart';
 import '../../data/models/category_model.dart';
 import '../providers/courses_provider.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
@@ -75,7 +75,7 @@ class CategoriesScreen extends ConsumerWidget {
                           },
                         );
                       },
-                      loading: () => const GridShimmer(itemCount: 8),
+                      loading: () => const Center(child: AppLoadingIndicator()),
                       error: (err, stack) => ErrorView(
                         error: err,
                         onRetry: () => ref.refresh(categoriesProvider),
@@ -277,17 +277,17 @@ class _CategoryCard extends StatelessWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(AppSizes.radiusXl),
                   ),
-                  child: AppNetworkImage(
+                  child: CachedNetworkImage(
                     imageUrl: category.imageUrl,
                     fit: BoxFit.cover,
-                    placeholder: Center(
+                    placeholder: (context, url) => Center(
                       child: Icon(
                         Icons.category_rounded,
                         size: 40,
                         color: color,
                       ),
                     ),
-                    errorWidget: Center(
+                    errorWidget: (context, url, error) => Center(
                       child: Icon(
                         Icons.category_rounded,
                         size: 40,

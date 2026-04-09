@@ -2,6 +2,8 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
+import 'package:sparkbit/core/network/models/paginated_data.dart';
+import 'package:sparkbit/features/courses/data/models/lesson_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/app_strings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +20,6 @@ import 'package:sparkbit/core/network/models/paginated_data.dart';
 import 'package:sparkbit/core/constants/app_routes.dart';
 import 'package:sparkbit/core/utils/snackbar_utils.dart';
 import 'package:sparkbit/core/widgets/app_button.dart';
-import 'package:sparkbit/core/widgets/app_network_image.dart';
 import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../cart/presentation/widgets/cart_badge_icon.dart';
 import '../../../cart/presentation/widgets/add_to_cart_button.dart';
@@ -71,10 +72,10 @@ class CourseDetailsScreen extends ConsumerWidget {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        AppNetworkImage(
-                          imageUrl: updatedCourse.coverImageUrl,
+                        Image.network(
+                          updatedCourse.coverImageUrl,
                           fit: BoxFit.cover,
-                          errorWidget: Container(
+                          errorBuilder: (_, __, ___) => Container(
                             color: AppColors.primary.withOpacity(0.1),
                             child: const Icon(
                               Iconsax.image,
@@ -145,22 +146,8 @@ class CourseDetailsScreen extends ConsumerWidget {
                                 children: [
                                   CircleAvatar(
                                     radius: 16,
-                                    child: ClipOval(
-                                      child: AppNetworkImage(
-                                        imageUrl:
-                                            updatedCourse.instructor.imageUrl,
-                                        width: 32,
-                                        height: 32,
-                                        fit: BoxFit.cover,
-                                        errorWidget: Icon(
-                                          Icons.person_rounded,
-                                          size: 16,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withOpacity(0.35),
-                                        ),
-                                      ),
+                                    backgroundImage: NetworkImage(
+                                      updatedCourse.instructor.imageUrl,
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -249,7 +236,7 @@ class _OverviewTab extends StatelessWidget {
         children: [
           _SectionTitle(title: 'Description'),
           const SizedBox(height: 10),
-          SelectableLinkify(
+          Linkify(
             onOpen: (link) async {
               final uri = Uri.parse(link.url);
               if (await canLaunchUrl(uri)) {
@@ -267,11 +254,9 @@ class _OverviewTab extends StatelessWidget {
               height: 1.6,
               color: AppColors.primary,
               decoration: TextDecoration.underline,
-              decorationColor: AppColors.primary,
-              decorationThickness: 1.5,
               fontWeight: FontWeight.w600,
             ),
-            options: const LinkifyOptions(humanize: true, removeWww: false),
+            options: const LinkifyOptions(humanize: false, removeWww: false),
           ),
           const SizedBox(height: 30),
           _SectionTitle(title: 'Course Stats'),
@@ -300,21 +285,7 @@ class _OverviewTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 30,
-                  child: ClipOval(
-                    child: AppNetworkImage(
-                      imageUrl: course.instructor.imageUrl,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorWidget: Icon(
-                        Icons.person_rounded,
-                        size: 28,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.35),
-                      ),
-                    ),
-                  ),
+                  backgroundImage: NetworkImage(course.instructor.imageUrl),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -393,19 +364,13 @@ class _LessonsTab extends ConsumerWidget {
   }
 }
 
-class _LessonTile extends StatefulWidget {
+class _LessonTile extends ConsumerWidget {
   final LessonModel lesson;
 
   const _LessonTile({required this.lesson});
 
   @override
-  State<_LessonTile> createState() => _LessonTileState();
-}
-
-class _LessonTileState extends State<_LessonTile> {
-  @override
-  Widget build(BuildContext context) {
-    final lesson = widget.lesson;
+  Widget build(BuildContext context, WidgetRef ref) {
     final isLocked = !lesson.canAccess;
     final isCompleted = lesson.isCompleted ?? false;
     final progress = lesson.progress ?? 0.0;
@@ -442,35 +407,31 @@ class _LessonTileState extends State<_LessonTile> {
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Leading Icon/Avatar
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isLocked
-                      ? Colors.grey[200]
-                      : isCompleted
-                      ? AppColors.primary
-                      : AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isLocked
-                      ? Iconsax.lock
-                      : isCompleted
-                      ? Iconsax.tick_circle5
-                      : Iconsax.play,
-                  color: isLocked
-                      ? Colors.grey
-                      : isCompleted
-                      ? Colors.white
-                      : AppColors.primary,
-                  size: 20,
-                ),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isLocked
+                    ? Colors.grey[200]
+                    : isCompleted
+                    ? AppColors.primary
+                    : AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isLocked
+                    ? Iconsax.lock
+                    : isCompleted
+                    ? Iconsax.tick_circle5
+                    : Iconsax.play,
+                color: isLocked
+                    ? Colors.grey
+                    : isCompleted
+                    ? Colors.white
+                    : AppColors.primary,
+                size: 20,
               ),
             ),
             const SizedBox(width: 16),
@@ -479,48 +440,50 @@ class _LessonTileState extends State<_LessonTile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title Row — with completed badge
+                  // Title Row
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: _ExpandableLessonTitle(
-                          title: lesson.title,
-                          isLocked: isLocked,
+                        child: Text(
+                          lesson.title,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            color: isLocked
+                                ? Colors.grey
+                                : Theme.of(context).colorScheme.onSurface,
+                          ),
                         ),
                       ),
                       // Completed Badge
                       if (isCompleted)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8, top: 2),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Iconsax.tick_circle5,
-                                  size: 12,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Iconsax.tick_circle5,
+                                size: 12,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                "Completed",
+                                style: GoogleFonts.outfit(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
                                   color: AppColors.primary,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "Done",
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
@@ -591,103 +554,6 @@ class _LessonTileState extends State<_LessonTile> {
   }
 }
 
-/// Displays lesson title with up to 2 lines. If the text overflows,
-/// a "Show more / Show less" toggle appears for professional long-title handling.
-class _ExpandableLessonTitle extends StatefulWidget {
-  final String title;
-  final bool isLocked;
-
-  const _ExpandableLessonTitle({required this.title, required this.isLocked});
-
-  @override
-  State<_ExpandableLessonTitle> createState() => _ExpandableLessonTitleState();
-}
-
-class _ExpandableLessonTitleState extends State<_ExpandableLessonTitle> {
-  bool _isExpanded = false;
-  bool _isOverflowing = false;
-
-  static const int _maxLines = 2;
-
-  TextStyle _titleStyle(BuildContext context) => GoogleFonts.outfit(
-    fontWeight: FontWeight.w600,
-    fontSize: 15.5,
-    height: 1.35,
-    color: widget.isLocked
-        ? Colors.grey
-        : Theme.of(context).colorScheme.onSurface,
-  );
-
-  void _checkOverflow(BuildContext context, BoxConstraints constraints) {
-    final painter = TextPainter(
-      text: TextSpan(text: widget.title, style: _titleStyle(context)),
-      maxLines: _maxLines,
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: constraints.maxWidth);
-
-    final overflows = painter.didExceedMaxLines;
-    if (overflows != _isOverflowing) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) setState(() => _isOverflowing = overflows);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        _checkOverflow(context, constraints);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              child: Text(
-                widget.title,
-                maxLines: _isExpanded ? null : _maxLines,
-                overflow: _isExpanded
-                    ? TextOverflow.visible
-                    : TextOverflow.ellipsis,
-                style: _titleStyle(context),
-              ),
-            ),
-            if (_isOverflowing || _isExpanded)
-              GestureDetector(
-                onTap: () => setState(() => _isExpanded = !_isExpanded),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _isExpanded ? 'Show less' : 'Show more',
-                        style: GoogleFonts.outfit(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        _isExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        size: 14,
-                        color: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _BottomEnrollBar extends ConsumerWidget {
   final CourseModel course;
 
@@ -713,47 +579,7 @@ class _BottomEnrollBar extends ConsumerWidget {
           child: AppButton(
             text: 'Continue Learning',
             onPressed: () {
-              final lessonsAsync = ref.read(lessonsProvider(course.id));
-              final lessons = lessonsAsync.valueOrNull?.data;
-
-              if (lessons == null || lessons.isEmpty) {
-                // Lessons not loaded yet, just switch to tab
-                DefaultTabController.of(context).animateTo(1);
-                return;
-              }
-
-              // 1. Find in-progress lesson (has progress but not completed)
-              final inProgress = lessons
-                  .where(
-                    (l) =>
-                        l.canAccess &&
-                        (l.progress ?? 0) > 0 &&
-                        l.isCompleted != true,
-                  )
-                  .toList();
-
-              // 2. Find first uncompleted accessible lesson
-              final firstUncompleted = lessons
-                  .where((l) => l.canAccess && l.isCompleted != true)
-                  .toList();
-
-              // 3. All completed — take the last accessible lesson
-              final lastAccessible = lessons.where((l) => l.canAccess).toList();
-
-              final LessonModel? target = inProgress.isNotEmpty
-                  ? inProgress.first
-                  : firstUncompleted.isNotEmpty
-                  ? firstUncompleted.first
-                  : lastAccessible.isNotEmpty
-                  ? lastAccessible.last
-                  : null;
-
-              if (target != null) {
-                context.push(AppRoutes.lessonViewer, extra: target);
-              } else {
-                // No accessible lesson, switch to tab
-                DefaultTabController.of(context).animateTo(1);
-              }
+              DefaultTabController.of(context).animateTo(1);
             },
           ),
         ),
@@ -778,24 +604,7 @@ class _BottomEnrollBar extends ConsumerWidget {
           child: AppButton(
             text: 'Start Learning',
             onPressed: () {
-              final lessonsAsync = ref.read(lessonsProvider(course.id));
-              final lessons = lessonsAsync.valueOrNull?.data;
-
-              if (lessons != null && lessons.isNotEmpty) {
-                final firstAccessible = lessons
-                    .where((l) => l.canAccess)
-                    .toList();
-                if (firstAccessible.isNotEmpty) {
-                  context.push(
-                    AppRoutes.lessonViewer,
-                    extra: firstAccessible.first,
-                  );
-                  return;
-                }
-              }
-
-              // Fallback: switch to Lessons tab
-              DefaultTabController.maybeOf(context)?.animateTo(1);
+              DefaultTabController.of(context).animateTo(1);
             },
           ),
         ),
@@ -823,7 +632,7 @@ class _BottomEnrollBar extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Price',
+                  'Total Price',
                   style: GoogleFonts.outfit(color: Colors.grey, fontSize: 12),
                 ),
                 Text(

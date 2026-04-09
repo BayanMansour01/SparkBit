@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:shimmer/shimmer.dart';
 import 'package:sparkbit/core/constants/app_strings.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/models/user_profile.dart';
+import '../../../../core/widgets/app_loading_indicator.dart';
 import '../../../../core/widgets/error_view.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_routes.dart';
@@ -20,12 +20,6 @@ import '../../../../core/widgets/responsive/responsive_center.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../../core/widgets/app_profile_avatar.dart';
 import '../../../../core/widgets/main_screen_wrapper.dart';
-import '../../../../core/widgets/app_network_image.dart';
-import '../../../cart/presentation/providers/cart_provider.dart';
-
-bool _isSmallPhone(BuildContext context) =>
-    MediaQuery.sizeOf(context).width < 360;
-bool _isTablet(BuildContext context) => MediaQuery.sizeOf(context).width >= 768;
 
 /// Home screen with premium UI and animations
 /// Refactored to Stateless ConsumerWidget
@@ -138,7 +132,7 @@ class HomeScreen extends ConsumerWidget {
       },
       loading: () => const MainScreenWrapper(
         useScroll: false,
-        child: _HomeScreenSkeleton(),
+        child: Center(child: AppLoadingIndicator()),
       ),
       error: (err, stack) => MainScreenWrapper(
         child: ErrorView(
@@ -154,13 +148,6 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildAppBar(BuildContext context, UserProfile profile) {
     final isGuest = profile.id == -1;
-    final isSmall = _isSmallPhone(context);
-    final isTablet = _isTablet(context);
-    final titleSize = isTablet
-        ? AppSizes.font4xl + 4
-        : (isSmall ? AppSizes.font3xl : AppSizes.font4xl);
-    final subtitleSize = isSmall ? AppSizes.fontSm : AppSizes.fontLg;
-    final actionSpacing = isSmall ? 8.0 : 12.0;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -179,12 +166,10 @@ class HomeScreen extends ConsumerWidget {
                 Text(
                   isGuest ? 'Welcome!' : 'Hi, ${profile.name.split(' ').first}',
                   style: GoogleFonts.outfit(
-                    fontSize: titleSize,
+                    fontSize: AppSizes.font4xl,
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: AppSizes.space4),
                 Text(
@@ -192,13 +177,11 @@ class HomeScreen extends ConsumerWidget {
                       ? 'Discover amazing courses today.'
                       : 'Ready to learn today?',
                   style: GoogleFonts.outfit(
-                    fontSize: subtitleSize,
+                    fontSize: AppSizes.fontLg,
                     color: Theme.of(
                       context,
                     ).colorScheme.onSurface.withOpacity(0.6),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -207,13 +190,10 @@ class HomeScreen extends ConsumerWidget {
             children: [
               if (!isGuest) ...[
                 const _NotificationBell(),
-                SizedBox(width: actionSpacing),
+                const SizedBox(width: 12),
               ],
-              // Cart Icon with Badge
-              _CartIconWithBadge(context: context),
-              SizedBox(width: actionSpacing),
               AppProfileAvatar(
-                radius: isSmall ? 20 : AppSizes.avatarRadius24,
+                radius: AppSizes.avatarRadius24,
                 isGuest: isGuest,
                 imageUrl: profile.avatar,
                 onTap: () {
@@ -268,20 +248,16 @@ class HomeScreen extends ConsumerWidget {
                 size: AppSizes.iconMd,
               ),
               const SizedBox(width: AppSizes.space12),
-              Expanded(
-                child: Text(
-                  'What do you want to learn?',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.outfit(
-                    fontSize: AppSizes.fontBase,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withOpacity(0.4),
-                  ),
+              Text(
+                'What do you want to learn?',
+                style: GoogleFonts.outfit(
+                  fontSize: AppSizes.fontBase,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.4),
                 ),
               ),
-              const SizedBox(width: AppSizes.space8),
+              const Spacer(),
               Icon(
                 Icons.tune_rounded,
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
@@ -302,296 +278,31 @@ class HomeScreen extends ConsumerWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.outfit(
-              fontSize: AppSizes.font2xl,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
+        Text(
+          title,
+          style: GoogleFonts.outfit(
+            fontSize: AppSizes.font2xl,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
-        const SizedBox(width: 12),
         TextButton(
           onPressed: onSeeAll,
           style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            minimumSize: const Size(56, 44),
-            tapTargetSize: MaterialTapTargetSize.padded,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest.withOpacity(0.55),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.18),
-              ),
-            ),
+            padding: EdgeInsets.zero,
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'See All',
-                style: GoogleFonts.outfit(
-                  fontSize: AppSizes.fontBase,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                Icons.arrow_forward_rounded,
-                size: 16,
-                color: AppColors.primary,
-              ),
-            ],
+          child: Text(
+            'See All',
+            style: GoogleFonts.outfit(
+              fontSize: AppSizes.fontBase,
+              fontWeight: FontWeight.w500,
+              color: AppColors.primary,
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HomeIconButtonShell extends StatelessWidget {
-  final Widget child;
-
-  const _HomeIconButtonShell({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: 44,
-      height: 44,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest.withOpacity(0.75)
-            : Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.18),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _HomeScreenSkeleton extends StatelessWidget {
-  const _HomeScreenSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isSmall = width < 360;
-        final isTablet = width >= 768;
-        final popularCardWidth = isTablet
-            ? 320.0
-            : (isSmall ? (width - 72).clamp(220.0, 255.0) : 270.0);
-        final popularCardHeight = isTablet ? 320.0 : (isSmall ? 276.0 : 295.0);
-
-        return Shimmer.fromColors(
-          baseColor: baseColor,
-          highlightColor: highlightColor,
-          child: ListView(
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(
-              AppSizes.paddingLg,
-              AppSizes.space20,
-              AppSizes.paddingLg,
-              AppSizes.space32,
-            ),
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _box(
-                          height: isSmall ? 26 : 30,
-                          width: isSmall ? 150 : 190,
-                        ),
-                        const SizedBox(height: 8),
-                        _box(height: 14, width: isSmall ? 110 : 150),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _circle(isSmall ? 38 : 42),
-                  const SizedBox(width: 10),
-                  _circle(isSmall ? 38 : 42),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-              _card(height: 56, width: double.infinity, radius: 16),
-
-              const SizedBox(height: 28),
-              _sectionHeader(),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: 60,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 4,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, index) {
-                    final widths = isSmall
-                        ? [88.0, 96.0, 82.0, 104.0]
-                        : [110.0, 122.0, 98.0, 128.0];
-                    return _card(
-                      height: 60,
-                      width: widths[index % widths.length],
-                      radius: 999,
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 30),
-              _sectionHeader(),
-              const SizedBox(height: 14),
-              SizedBox(
-                height: popularCardHeight,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 2,
-                  separatorBuilder: (_, __) => const SizedBox(width: 16),
-                  itemBuilder: (_, __) => _popularCardSkeleton(
-                    width: popularCardWidth,
-                    height: popularCardHeight,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  static Widget _sectionHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [_box(height: 24, width: 170), _box(height: 16, width: 56)],
-    );
-  }
-
-  static Widget _popularCardSkeleton({
-    required double width,
-    required double height,
-  }) {
-    final imageHeight = height * 0.46;
-
-    return _card(
-      height: height,
-      width: width,
-      radius: AppSizes.radiusXl,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _box(
-            height: imageHeight,
-            width: double.infinity,
-            radius: AppSizes.radiusXl,
-            onlyTopCorners: true,
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.paddingMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _box(height: 10, width: 90),
-                const SizedBox(height: 10),
-                _box(height: 14, width: 210),
-                const SizedBox(height: 8),
-                _box(height: 14, width: 160),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    _box(height: 12, width: 58),
-                    const Spacer(),
-                    _box(height: 20, width: 64, radius: 10),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _circle(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-
-  static Widget _card({
-    required double height,
-    required double width,
-    required double radius,
-    Widget? child,
-  }) {
-    return Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(radius),
-      ),
-      child: child,
-    );
-  }
-
-  static Widget _box({
-    required double height,
-    required double width,
-    double radius = 12,
-    bool onlyTopCorners = false,
-  }) {
-    return Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: onlyTopCorners
-            ? const BorderRadius.vertical(
-                top: Radius.circular(AppSizes.radiusXl),
-              )
-            : BorderRadius.circular(radius),
-      ),
     );
   }
 }
@@ -675,12 +386,9 @@ class _CategoryListSectionState extends State<_CategoryListSection> {
   @override
   Widget build(BuildContext context) {
     if (widget.categories.isEmpty) return const SizedBox();
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 360;
-    final pillHeight = isSmall ? 52.0 : 60.0;
 
     return SizedBox(
-      height: pillHeight,
+      height: 60, // Slightly increased to accommodate shadow
       child: ListView.separated(
         controller: _scrollController,
         scrollDirection: Axis.horizontal,
@@ -723,56 +431,37 @@ class _PopularCoursesList extends StatelessWidget {
         ),
       );
     }
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isSmall = width < 360;
-        final isTablet = width >= 768;
-        final horizontalPadding = isTablet
-            ? AppSizes.paddingLg + 8
-            : AppSizes.paddingLg;
-        final cardWidth = isTablet
-            ? 320.0
-            : (isSmall ? (width - 72).clamp(220.0, 255.0) : 270.0);
-        final cardHeight = isTablet ? 320.0 : (isSmall ? 276.0 : 295.0);
+    return SizedBox(
+      height: 280,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSizes.paddingLg,
+          vertical: 8,
+        ), // Added vertical padding for shadow
+        clipBehavior: Clip.none, // Allow shadows to paint outside bounds
+        itemCount: courses.length > 5 ? 5 : courses.length,
+        separatorBuilder: (_, __) => const SizedBox(width: AppSizes.space16),
+        itemBuilder: (context, index) {
+          final course = courses[index];
+          final colors = [
+            const Color(0xFF6366F1),
+            const Color(0xFFEC4899),
+            const Color(0xFF8B5CF6),
+            const Color(0xFF10B981),
+            const Color(0xFFF59E0B),
+          ];
+          final color = colors[index % colors.length];
 
-        return SizedBox(
-          height: cardHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: 8,
-            ),
-            clipBehavior: Clip.none,
-            itemCount: courses.length > 5 ? 5 : courses.length,
-            separatorBuilder: (_, __) =>
-                const SizedBox(width: AppSizes.space16),
-            itemBuilder: (context, index) {
-              final course = courses[index];
-              final colors = [
-                const Color(0xFF6366F1),
-                const Color(0xFFEC4899),
-                const Color(0xFF8B5CF6),
-                const Color(0xFF10B981),
-                const Color(0xFFF59E0B),
-              ];
-              final color = colors[index % colors.length];
-
-              return _PopularCourseCard(
-                course: course,
-                color: color,
-                heroTag: 'popular_course_${course.id}_$index',
-                width: cardWidth,
-                cardHeight: cardHeight,
-                onTap: () =>
-                    context.push(AppRoutes.courseDetails, extra: course),
-              );
-            },
-          ),
-        );
-      },
+          return _PopularCourseCard(
+            course: course,
+            color: color,
+            heroTag: 'popular_course_${course.id}_$index',
+            onTap: () => context.push(AppRoutes.courseDetails, extra: course),
+          );
+        },
+      ),
     );
   }
 }
@@ -792,9 +481,6 @@ class _CategoryPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 360;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -802,9 +488,9 @@ class _CategoryPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSizes.radius2xl),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          padding: EdgeInsets.symmetric(
-            horizontal: isSmall ? 14 : AppSizes.space20,
-            vertical: isSmall ? AppSizes.space10 : AppSizes.space12,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.space20,
+            vertical: AppSizes.space12,
           ),
           decoration: BoxDecoration(
             color: isSelected
@@ -847,10 +533,8 @@ class _CategoryPill extends StatelessWidget {
               const SizedBox(width: AppSizes.space8),
               Text(
                 label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.outfit(
-                  fontSize: isSmall ? 13 : 14,
+                  fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   color: isSelected
                       ? Colors.white
@@ -869,26 +553,21 @@ class _PopularCourseCard extends StatelessWidget {
   final CourseModel course;
   final String heroTag;
   final Color color;
-  final double width;
-  final double cardHeight;
   final VoidCallback onTap;
 
   const _PopularCourseCard({
     required this.course,
     required this.heroTag,
     required this.color,
-    required this.width,
-    required this.cardHeight,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final imageHeight = cardHeight * 0.46;
 
     return Container(
-      width: width,
+      width: 240,
       decoration: BoxDecoration(
         color: isDark
             ? Theme.of(
@@ -922,7 +601,7 @@ class _PopularCourseCard extends StatelessWidget {
                 Hero(
                   tag: heroTag,
                   child: Container(
-                    height: imageHeight,
+                    height: 135,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: const BorderRadius.vertical(
@@ -935,10 +614,10 @@ class _PopularCourseCard extends StatelessWidget {
                         top: Radius.circular(AppSizes.radiusXl),
                       ),
                       child: course.coverImageUrl.isNotEmpty
-                          ? AppNetworkImage(
-                              imageUrl: course.coverImageUrl,
+                          ? Image.network(
+                              course.coverImageUrl,
                               fit: BoxFit.cover,
-                              errorWidget: _buildPlaceholder(),
+                              errorBuilder: (_, __, ___) => _buildPlaceholder(),
                             )
                           : _buildPlaceholder(),
                     ),
@@ -1022,10 +701,10 @@ class _PopularCourseCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.outfit(
-                      fontSize: 15.5,
+                      fontSize: 15, // Consistent with ContinueLearning
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
-                      height: 1.3,
+                      height: 1.25,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1133,13 +812,6 @@ class _ContinueLearningSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 360;
-    final isTablet = width >= 768;
-    final thumbSize = isTablet ? 82.0 : (isSmall ? 64.0 : 74.0);
-    final progressSize = isTablet ? 62.0 : (isSmall ? 50.0 : 56.0);
-    final titleSize = isSmall ? 14.5 : 16.0;
-    final bylineSize = isSmall ? 9.0 : 10.0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
@@ -1184,8 +856,8 @@ class _ContinueLearningSection extends StatelessWidget {
               children: [
                 // Course Thumbnail
                 Container(
-                  width: thumbSize,
-                  height: thumbSize,
+                  width: 74,
+                  height: 74,
                   decoration: BoxDecoration(
                     color: AppColors.primary.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(AppSizes.radiusLg),
@@ -1198,18 +870,20 @@ class _ContinueLearningSection extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(AppSizes.radiusLg),
                     child: course.coverImageUrl.isNotEmpty
-                        ? AppNetworkImage(
-                            imageUrl: course.coverImageUrl,
+                        ? Image.network(
+                            course.coverImageUrl,
                             fit: BoxFit.cover,
-                            errorWidget: Center(
-                              child: Icon(
-                                Icons.image_not_supported_rounded,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withOpacity(0.2),
-                                size: 24,
-                              ),
-                            ),
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Icon(
+                                  Icons.image_not_supported_rounded,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface.withOpacity(0.2),
+                                  size: 24,
+                                ),
+                              );
+                            },
                           )
                         : Center(
                             child: Icon(
@@ -1231,17 +905,13 @@ class _ContinueLearningSection extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Text(
-                              'BY ${course.instructor.name.toUpperCase()}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.outfit(
-                                fontSize: bylineSize,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: AppColors.primary,
-                              ),
+                          Text(
+                            'BY ${course.instructor.name.toUpperCase()}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                              color: AppColors.primary,
                             ),
                           ),
                           // Optional: Percentage text here or below
@@ -1250,13 +920,13 @@ class _ContinueLearningSection extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         course.title,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.outfit(
-                          fontSize: titleSize,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Theme.of(context).colorScheme.onSurface,
-                          height: 1.3,
+                          height: 1.2,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -1291,8 +961,8 @@ class _ContinueLearningSection extends StatelessWidget {
 
                 // Circular Progress Indicator
                 SizedBox(
-                  width: progressSize,
-                  height: progressSize,
+                  width: 56,
+                  height: 56,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -1357,23 +1027,24 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
           ref.invalidate(unreadNotificationsCountProvider);
         });
       },
-      borderRadius: BorderRadius.circular(14),
-      child: _HomeIconButtonShell(
+      borderRadius: BorderRadius.circular(50),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             Icon(
               Icons.notifications_none_rounded,
-              size: 22,
+              size: 28,
               color: Theme.of(context).colorScheme.onSurface,
             ),
             // Show error indicator if there's an error (for debugging)
             if (unreadCountAsync.hasError)
               Positioned(
-                top: -1,
-                right: -1,
+                top: -2,
+                right: -2,
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: Colors.orange,
                     shape: BoxShape.circle,
@@ -1383,14 +1054,14 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
                     ),
                   ),
                   constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
+                    minWidth: 16,
+                    minHeight: 16,
                   ),
                   child: const Center(
                     child: Icon(
                       Icons.error_outline,
                       color: Colors.white,
-                      size: 8,
+                      size: 10,
                     ),
                   ),
                 ),
@@ -1399,10 +1070,10 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
             if (unreadCountAsync.valueOrNull != null &&
                 unreadCountAsync.value! > 0)
               Positioned(
-                top: -1,
-                right: -1,
+                top: -2,
+                right: -2,
                 child: Container(
-                  padding: const EdgeInsets.all(3),
+                  padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     color: AppColors.error,
                     shape: BoxShape.circle,
@@ -1412,8 +1083,8 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
                     ),
                   ),
                   constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
+                    minWidth: 16,
+                    minHeight: 16,
                   ),
                   child: Center(
                     child: Text(
@@ -1422,7 +1093,7 @@ class _NotificationBellState extends ConsumerState<_NotificationBell> {
                           : unreadCountAsync.value.toString(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 9,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -1442,135 +1113,116 @@ class _GuestWelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isSmall = width < 360;
-
     return SafeArea(
       child: ResponsiveCenter(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(
-                isSmall ? AppSizes.paddingLg : AppSizes.paddingXl,
-              ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight:
-                      constraints.maxHeight -
-                      (isSmall
-                          ? AppSizes.paddingLg * 2
-                          : AppSizes.paddingXl * 2),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingXl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.school_rounded,
+                    size: 80,
+                    color: AppColors.primary,
+                  ),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Icon
-                    Container(
-                      padding: EdgeInsets.all(isSmall ? 24 : 32),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.school_rounded,
-                        size: isSmall ? 64 : 80,
-                        color: AppColors.primary,
+                const SizedBox(height: 32),
+
+                // Title
+                Text(
+                  'Welcome to Yuna',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Subtitle
+                Text(
+                  'Sign in to access your personalized learning experience',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: 48),
+
+                // Sign In Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => context.pushNamed(AppRoutes.signInName),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shadowColor: AppColors.primary.withOpacity(0.4),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    SizedBox(height: isSmall ? 24 : 32),
-
-                    // Title
-                    Text(
-                      'Welcome to Yuna',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        fontSize: isSmall ? 26 : 32,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Subtitle
-                    Text(
-                      'Sign in to access your personalized learning experience',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.outfit(
-                        fontSize: isSmall ? 14 : 16,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                    SizedBox(height: isSmall ? 32 : 48),
-
-                    // Sign In Button
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () =>
-                            context.pushNamed(AppRoutes.signInName),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: AppColors.primary.withOpacity(0.4),
-                          padding: EdgeInsets.symmetric(
-                            vertical: isSmall ? 14 : 18,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.login_rounded, size: 24),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Sign In',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.login_rounded, size: 24),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Sign In',
-                              style: GoogleFonts.outfit(
-                                fontSize: isSmall ? 15 : 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-
-                    // Features List
-                    SizedBox(height: isSmall ? 24 : 32),
-                    Text(
-                      'What you\'ll get:',
-                      style: GoogleFonts.outfit(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const _FeatureItem(
-                      icon: Icons.school,
-                      text: 'Access to courses',
-                    ),
-                    const SizedBox(height: 12),
-                    const _FeatureItem(
-                      icon: Icons.track_changes,
-                      text: 'Track your progress',
-                    ),
-                    const SizedBox(height: 12),
-                    const _FeatureItem(
-                      icon: Icons.stars,
-                      text: 'Earn certificates',
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+
+                // Features List
+                const SizedBox(height: 32),
+                Text(
+                  'What you\'ll get:',
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const _FeatureItem(
+                  icon: Icons.school,
+                  text: 'Access to courses',
+                ),
+                const SizedBox(height: 12),
+                const _FeatureItem(
+                  icon: Icons.track_changes,
+                  text: 'Track your progress',
+                ),
+                const SizedBox(height: 12),
+                const _FeatureItem(
+                  icon: Icons.stars,
+                  text: 'Earn certificates',
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -1604,68 +1256,6 @@ class _FeatureItem extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Cart Icon with Badge showing item count
-class _CartIconWithBadge extends ConsumerWidget {
-  final BuildContext context;
-
-  const _CartIconWithBadge({required this.context});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final cartItemCount = ref.watch(cartItemCountProvider);
-
-    return InkWell(
-      onTap: () {
-        context.push(AppRoutes.cartPath);
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: _HomeIconButtonShell(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 22,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            // Show badge only if there are items in cart
-            if (cartItemCount > 0)
-              Positioned(
-                top: -1,
-                right: -1,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    color: AppColors.error,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                      width: 1.5,
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: Center(
-                    child: Text(
-                      cartItemCount > 99 ? '99+' : cartItemCount.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -15,8 +15,8 @@
 ### 3. **Course Details Screen - Unused Imports** ✅
 **Problem**: Unused imports causing lint warnings
 **Fix**: Removed:
-- `package:yuna/core/constants/app_sizes.dart`
-- `package:yuna/features/profile/presentation/providers/profile_provider.dart`
+- `package:sparkbit/core/constants/app_sizes.dart`
+- `package:sparkbit/features/profile/presentation/providers/profile_provider.dart`
 **File**: `lib/features/courses/presentation/screens/course_details_screen.dart`
 
 ### 4. **Course Details Screen - Unused Variable** ✅

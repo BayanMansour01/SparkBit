@@ -8,7 +8,6 @@ import 'package:sparkbit/features/courses/presentation/providers/lesson_view_pro
 import 'package:sparkbit/features/courses/presentation/providers/courses_provider.dart';
 import 'package:sparkbit/features/courses/presentation/widgets/review_dialog.dart';
 import 'package:sparkbit/features/home/presentation/providers/home_provider.dart';
-import 'package:sparkbit/features/profile/presentation/providers/profile_provider.dart';
 
 class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final LessonModel lesson;
@@ -20,8 +19,6 @@ class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
     // Watch state for updates
     final viewState = ref.watch(lessonViewProvider(lesson));
     final controller = ref.read(lessonViewProvider(lesson).notifier);
-    final profile = ref.watch(userProfileProvider).valueOrNull;
-    final isGuest = profile?.id == -1;
 
     return AppBar(
       title: Text(
@@ -35,33 +32,30 @@ class LessonAppBar extends ConsumerWidget implements PreferredSizeWidget {
         onPressed: () => Navigator.of(context).pop(),
       ),
       actions: [
-        if (!isGuest)
-          IconButton(
-            icon: const Icon(Icons.star_rate_rounded, color: Colors.amber),
-            tooltip: 'Rate Lesson',
-            onPressed: () async {
-              final result = await showDialog<int>(
-                context: context,
-                builder: (context) =>
-                    ReviewDialog(lessonId: lesson.id.toString()),
-              );
-              if (result != null) {
-                // 1. Optimistic update: update lesson rating locally
-                ref
-                    .read(lessonsProvider(lesson.courseId).notifier)
-                    .updateLessonRating(lesson.id, result.toDouble());
+        IconButton(
+          icon: const Icon(Icons.star_rate_rounded, color: Colors.amber),
+          tooltip: 'Rate Lesson',
+          onPressed: () async {
+            final result = await showDialog<int>(
+              context: context,
+              builder: (context) =>
+                  ReviewDialog(lessonId: lesson.id.toString()),
+            );
+            if (result != null) {
+              // 1. Optimistic update: update lesson rating locally
+              ref
+                  .read(lessonsProvider(lesson.courseId).notifier)
+                  .updateLessonRating(lesson.id, result.toDouble());
 
-                // 2. Refresh all relevant API data in background
-                ref
-                    .read(lessonsProvider(lesson.courseId).notifier)
-                    .refreshData();
-                ref.read(coursesProvider.notifier).refreshData();
-                ref.read(myCoursesProvider.notifier).refreshData();
-                ref.invalidate(homeDataProvider);
-                ref.invalidate(homePopularCoursesProvider);
-              }
-            },
-          ),
+              // 2. Refresh all relevant API data in background
+              ref.read(lessonsProvider(lesson.courseId).notifier).refreshData();
+              ref.read(coursesProvider.notifier).refreshData();
+              ref.read(myCoursesProvider.notifier).refreshData();
+              ref.invalidate(homeDataProvider);
+              ref.invalidate(homePopularCoursesProvider);
+            }
+          },
+        ),
         // File Only: Show Completion Button
         if (!lesson.hasVideo && !viewState.isMarkedComplete)
           TextButton.icon(

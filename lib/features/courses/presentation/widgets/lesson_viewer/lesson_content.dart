@@ -157,8 +157,20 @@ class LessonContent extends ConsumerWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
-              // Fake description removed as per user request to show only real data
+              const SizedBox(height: AppSizes.space24),
+              _buildSectionHeader('Description'),
+              const SizedBox(height: AppSizes.space12),
+              Text(
+                'This lesson covers the fundamental concepts of the topic. Ensure you have the materials ready for the practical part.',
+                style: GoogleFonts.outfit(
+                  fontSize: AppSizes.fontBase,
+                  height: 1.6,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+              const SizedBox(height: AppSizes.space32),
               if (lesson.attachmentPath != null) ...[
                 _buildSectionHeader('Resources'),
                 const SizedBox(height: AppSizes.space16),

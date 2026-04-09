@@ -83,7 +83,7 @@ lib/features/cart/
 
 ### 1. إضافة أيقونة السلة (في أي AppBar)
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/cart_badge_icon.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/cart_badge_icon.dart';
 
 AppBar(
   actions: [CartBadgeIcon()],
@@ -92,14 +92,14 @@ AppBar(
 
 ### 2. إضافة زر "إضافة للسلة" (في شاشة الكورس)
 ```dart
-import 'package:yuna/features/cart/presentation/widgets/add_to_cart_button.dart';
+import 'package:sparkbit/features/cart/presentation/widgets/add_to_cart_button.dart';
 
 AddToCartButton(course: courseModel)
 ```
 
 ### 3. فتح شاشة السلة
 ```dart
-import 'package:yuna/features/cart/presentation/screens/cart_screen.dart';
+import 'package:sparkbit/features/cart/presentation/screens/cart_screen.dart';
 
 Navigator.push(
   context,
