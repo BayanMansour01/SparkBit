@@ -111,6 +111,14 @@ flutter_launcher_icons:
     generate: true
     image_path: "assets/Logo2.png"
 
+# Flutter Native Splash configuration
+flutter_native_splash:
+  color: "#F2F5F9"
+  color_dark: "#0D1321"
+  android: true
+  ios: true
+  web: true
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

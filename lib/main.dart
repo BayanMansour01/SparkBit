@@ -1,5 +1,5 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -13,12 +13,23 @@ import 'router/app_router.dart';
 import 'core/security/security_checker.dart';
 import 'core/security/emulator_blocked_screen.dart';
 
+Future<void> _initializeFirebaseMessagingInBackground() async {
+  try {
+    await getIt<FirebaseMessagingService>().initialize().timeout(
+      const Duration(seconds: 8),
+    );
+  } catch (e) {
+    debugPrint('FCM initialization failed/skipped: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ═══════════════════════════════════════════════════════════════
   // 🛡️ SECURITY: Emulator Detection (blocking — runs first)
   // ═══════════════════════════════════════════════════════════════
+
   try {
     final emulatorReason = await SecurityChecker.checkIfEmulator().timeout(
       const Duration(seconds: 5),
@@ -28,10 +39,9 @@ void main() async {
     if (emulatorReason != null) {
       final deviceInfo = await SecurityChecker.getDeviceInfoString();
       debugPrint('🛡️ BLOCKED: Emulator detected — $emulatorReason');
-      runApp(EmulatorBlockedScreen(
-        reason: emulatorReason,
-        deviceInfo: deviceInfo,
-      ));
+      runApp(
+        EmulatorBlockedScreen(reason: emulatorReason, deviceInfo: deviceInfo),
+      );
       return; // Stop here — don't initialize the rest of the app
     }
   } catch (e) {
@@ -46,10 +56,7 @@ void main() async {
 
   // Initialize Firebase
   try {
-    await Firebase.initializeApp();
-
-    // Initialize Firebase Messaging (Request Permissions)
-    await getIt<FirebaseMessagingService>().initialize();
+    await Firebase.initializeApp().timeout(const Duration(seconds: 8));
   } catch (e) {
     debugPrint('Firebase initialization failed: $e');
   }
@@ -63,6 +70,9 @@ void main() async {
       child: const YunaApp(),
     ),
   );
+
+  // Never block app startup on push initialization.
+  unawaited(_initializeFirebaseMessagingInBackground());
 }
 
 /// Root application widget

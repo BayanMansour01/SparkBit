@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sparkbit/core/services/notification_navigator.dart';
@@ -22,8 +23,8 @@ class FirebaseMessagingService {
       log('❌ FCM: User declined or has not accepted permission');
     }
 
-    // Subscribe to general topic for all users
-    await subscribeToTopic('general');
+    // Subscribe in background so startup does not wait on network.
+    unawaited(subscribeToTopic('general'));
 
     // ─────────────────────────────────────────────────────────────
     // FOREGROUND: App is open — message arrives but no system tray notification
@@ -50,14 +51,23 @@ class FirebaseMessagingService {
     // ─────────────────────────────────────────────────────────────
     // TERMINATED: App was closed — user tapped notification to open app
     // ─────────────────────────────────────────────────────────────
-    final initialMessage = await _firebaseMessaging.getInitialMessage();
-    if (initialMessage != null) {
+    RemoteMessage? initialMessage;
+    try {
+      initialMessage = await _firebaseMessaging.getInitialMessage().timeout(
+        const Duration(seconds: 3),
+        onTimeout: () => null,
+      );
+    } catch (e) {
+      log('❌ FCM initial message check failed: $e');
+    }
+    final terminatedMessage = initialMessage;
+    if (terminatedMessage != null) {
       log(
-        '📬 FCM [Terminated] title=${initialMessage.notification?.title} data=${initialMessage.data}',
+        '📬 FCM [Terminated] title=${terminatedMessage.notification?.title} data=${terminatedMessage.data}',
       );
       // Small delay to ensure router is ready
       Future.delayed(const Duration(milliseconds: 500), () {
-        _handleNavigation(initialMessage.data);
+        _handleNavigation(terminatedMessage.data);
       });
     }
   }

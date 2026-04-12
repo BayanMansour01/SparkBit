@@ -3,7 +3,7 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  static const String baseURl = "http://192.168.1.106:8000";
+  static const String baseURl = "https://spark-bit.me";
   // Student Settings
   static const String studentSettings = '/student/settings/getAll';
 
@@ -55,7 +55,6 @@ class ApiEndpoints {
   static const String uploadPaymentProof =
       '/student/orders/{id}/upload-payment-proof';
   static const String cancelOrder = '/student/orders/{id}/cancel';
-
   // Contact Us
   static const String contactUsGetAll = '/student/contact-us/getAll';
 }

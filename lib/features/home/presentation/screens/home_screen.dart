@@ -38,6 +38,8 @@ class HomeScreen extends ConsumerWidget {
     final homeDataAsync = ref.watch(homeDataProvider);
 
     return homeDataAsync.when(
+      // Show skeleton (not error) while refreshing after a previous failure
+      skipLoadingOnRefresh: false,
       data: (homeData) {
         return MainScreenWrapper(
           appBar: _buildAppBar(context, homeData.userProfile),

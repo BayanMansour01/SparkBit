@@ -30,7 +30,7 @@ class MainActivity : FlutterActivity() {
         super.onCreate(savedInstanceState)
 
         // FLAG_SECURE: Prevent screenshots and screen recording
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    //    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
 
         // Initialize DisplayManager for external display detection
         displayManager = getSystemService(Context.DISPLAY_SERVICE) as DisplayManager

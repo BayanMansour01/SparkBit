@@ -1,6 +1,6 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sparkbit/features/auth/presentation/screens/splash_screen.dart';
 import 'dart:developer' as dev;
 import '../providers/app_config_provider.dart';
 import '../screens/maintenance_screen.dart';
@@ -15,6 +15,7 @@ class AppConfigWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appConfigAsync = ref.watch(appConfigProvider);
+    final hasInternet = ref.watch(internetAvailableProvider).valueOrNull;
     // نكتفي بمراقبة الموديل الرئيسي لأنه يحتوي بالفعل على كل المنطق
 
     return appConfigAsync.when(
@@ -44,6 +45,19 @@ class AppConfigWrapper extends ConsumerWidget {
           return MaintenanceScreen(message: config.maintenanceMessage);
         }
 
+        final selectedMinVersion =
+            (Platform.isIOS
+                    ? config.latestSupportedIosVersion
+                    : config.latestSupportedAndroidVersion)
+                .toString()
+                .trim();
+        final selectedLatestVersion =
+            (Platform.isIOS
+                    ? config.latestIosVersion
+                    : config.latestAndroidVersion)
+                .toString()
+                .trim();
+
         dev.log(
           '⏭️  Maintenance mode OFF, checking updates...',
           name: 'AppConfigWrapper',
@@ -53,12 +67,21 @@ class AppConfigWrapper extends ConsumerWidget {
         final currentVersion = ref.watch(currentAppVersionProvider).valueOrNull;
 
         if (currentVersion != null) {
+          final normalizedCurrentVersion = currentVersion.trim();
           dev.log(
-            '  - currentVersion: $currentVersion',
+            '  - platform: ${Platform.operatingSystem}',
             name: 'AppConfigWrapper',
           );
           dev.log(
-            '  - config.minVersion: ${config.minVersion}',
+            '  - currentVersion: $normalizedCurrentVersion',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '  - selectedMinVersion: $selectedMinVersion',
+            name: 'AppConfigWrapper',
+          );
+          dev.log(
+            '  - selectedLatestVersion: $selectedLatestVersion',
             name: 'AppConfigWrapper',
           );
           dev.log(
@@ -79,26 +102,22 @@ class AppConfigWrapper extends ConsumerWidget {
           );
 
           // Robust comparison logic
-          final isUpdateRequired = _isVersionLower(
-            currentVersion,
-            config.minVersion,
-          );
-          final hasNewerVersion = _isVersionLower(
-            currentVersion,
-            config.latestVersion,
+          final isUpdateRequired = !_isSameVersion(
+            normalizedCurrentVersion,
+            selectedMinVersion,
           );
 
           dev.log('🔍 [AppConfig Check]', name: 'AppConfigWrapper');
           dev.log(
-            '   - Device App Version : "$currentVersion"',
+            '   - Device App Version : "$normalizedCurrentVersion"',
             name: 'AppConfigWrapper',
           );
           dev.log(
-            '   - Min Required (Min) : "${config.minVersion}"',
+            '   - Min Required (Min) : "$selectedMinVersion"',
             name: 'AppConfigWrapper',
           );
           dev.log(
-            '   - Latest Version (New): "${config.latestVersion}"',
+            '   - Latest Version (New): "$selectedLatestVersion"',
             name: 'AppConfigWrapper',
           );
           dev.log(
@@ -106,20 +125,29 @@ class AppConfigWrapper extends ConsumerWidget {
             name: 'AppConfigWrapper',
           );
           dev.log(
-            '   - Result: hasNewerVersion  = $hasNewerVersion (Optional)',
+            '   - Result: hasNewerVersion  = ${_isVersionLower(normalizedCurrentVersion, selectedLatestVersion)} (Optional)',
             name: 'AppConfigWrapper',
           );
 
-          // 3. فحص التحديث (سنغيرها هنا لتبرز الشاشة بمجرد وجود نسخة أحدث)
-          if (hasNewerVersion) {
+          // 3. Show update screen whenever device version is different from
+          // the supported minimum version.
+          if (isUpdateRequired) {
+            if (hasInternet != true) {
+              dev.log(
+                '⚠️ Update required but device is offline. Allowing temporary access.',
+                name: 'AppConfigWrapper',
+              );
+              return child;
+            }
+
             dev.log(
-              '✅ Newer version available, showing UpdateRequiredScreen',
+              '✅ Device version is different from supported version, showing UpdateRequiredScreen',
               name: 'AppConfigWrapper',
             );
             return UpdateRequiredScreen(
               message: config.updateMessage,
-              currentVersion: currentVersion,
-              latestVersion: config.latestVersion,
+              currentVersion: normalizedCurrentVersion,
+              latestVersion: selectedLatestVersion,
               androidUrl: config.directAndroidLink,
               iosUrl: config.iosPrivacyLink,
             );
@@ -136,7 +164,8 @@ class AppConfigWrapper extends ConsumerWidget {
       // أثناء التحميل: عرض Splash Screen مع تحميل جميل
       loading: () {
         dev.log('⏳ Loading config...', name: 'AppConfigWrapper');
-        return const SplashScreen();
+        // Use routed child to avoid mounting SplashScreen twice at startup.
+        return child;
       },
       // في حالة الخطأ: Fail-safe (السماح بالدخول أو إظهار صفحة خطأ بسيطة)
       error: (error, stack) {
@@ -187,5 +216,9 @@ class AppConfigWrapper extends ConsumerWidget {
       dev.log('⚠️ Error comparing versions "$current" and "$target": $e');
       return false;
     }
+  }
+
+  bool _isSameVersion(String a, String b) {
+    return !_isVersionLower(a, b) && !_isVersionLower(b, a);
   }
 }

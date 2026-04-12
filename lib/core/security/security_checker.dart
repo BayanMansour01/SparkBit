@@ -43,10 +43,29 @@ class SecurityChecker {
 
     // Known real device brands — used for weak checks only
     const realBrands = [
-      'samsung', 'xiaomi', 'redmi', 'oppo', 'vivo', 'huawei',
-      'honor', 'realme', 'oneplus', 'motorola', 'nokia', 'sony',
-      'lg', 'asus', 'lenovo', 'google', 'htc', 'tcl', 'poco',
-      'infinix', 'tecno', 'itel', 'nothing',
+      'samsung',
+      'xiaomi',
+      'redmi',
+      'oppo',
+      'vivo',
+      'huawei',
+      'honor',
+      'realme',
+      'oneplus',
+      'motorola',
+      'nokia',
+      'sony',
+      'lg',
+      'asus',
+      'lenovo',
+      'google',
+      'htc',
+      'tcl',
+      'poco',
+      'infinix',
+      'tecno',
+      'itel',
+      'nothing',
     ];
     final isKnownBrand = realBrands.any((b) => brand.contains(b));
 
@@ -58,7 +77,7 @@ class SecurityChecker {
     final emulatorPaths = [
       '/storage/emulated/0/storage/secure',
       '/storage/emulated/0/Android/data/com.android.ld.appstore', // LDPlayer
-      '/dev/socket/genyd',       // Genymotion
+      '/dev/socket/genyd', // Genymotion
       '/dev/socket/baseband_genyd',
     ];
     for (final path in emulatorPaths) {

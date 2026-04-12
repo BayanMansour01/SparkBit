@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io' show InternetAddress, SocketException;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,8 @@ import '../../../../core/services/device_service.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../home/presentation/providers/home_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
+import '../../../courses/presentation/providers/courses_provider.dart';
 
 /// Splash screen with highly animated coding theme
 class SplashScreen extends StatefulWidget {
@@ -56,6 +60,9 @@ class _SplashScreenState extends State<SplashScreen>
   ];
 
   Future<void>? _homePrefetchFuture;
+  Timer? _internetRetryTimer;
+  bool _isWaitingForInternet = false;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -94,7 +101,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _setupAnimations() {
     // 1. Setup Letter Animations (S P A R K)
-    const int letterCount = 8; // S-p-a-r-k-B-i-t
+    const int letterCount = 8; //S-p-a-r-k-B-i-t
     const double startTime = 0.03; // Start earlier
     const double stagger = 0.06; // Faster stagger for 8 letters
 
@@ -204,7 +211,34 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _checkAuthAndNavigate() async {
+    if (!mounted || _isNavigating) return;
+
+    final hasInternet = await _hasInternetConnection();
     if (!mounted) return;
+
+    if (!hasInternet) {
+      _enterOfflineMode();
+      return;
+    }
+
+    final wasOffline = _isWaitingForInternet;
+    _exitOfflineMode();
+    _isNavigating = true;
+
+    // If returning from offline, invalidate stale/error-cached data and re-fetch
+    if (wasOffline) {
+      _showConnectedSnackBar();
+      final container = ProviderScope.containerOf(context, listen: false);
+      container.invalidate(homeDataProvider);
+      container.invalidate(userProfileProvider);
+      container.invalidate(homePopularCoursesProvider);
+      container.invalidate(homeCategoriesProvider);
+      container.invalidate(myCoursesProvider);
+
+      // Re-prefetch fresh data
+      _homePrefetchFuture = null;
+      _startHomePrefetch();
+    }
 
     final prefs = getIt<SharedPreferences>();
     final token = prefs.getString('access_token');
@@ -218,18 +252,321 @@ class _SplashScreenState extends State<SplashScreen>
         debugPrint('Device registration failed on startup: $e');
         return false;
       });
+
+      // Wait for user to see the success SnackBar
+      if (wasOffline) {
+        await Future.delayed(const Duration(milliseconds: 1200));
+        if (!mounted) return;
+      }
+
       context.go(AppRoutes.home);
     } else {
       // Guest Mode: Go to Home directly
       debugPrint('No token found, entering Guest Mode');
       await _awaitShortPrefetchWindow();
       if (!mounted) return;
+
+      // Wait for user to see the success SnackBar
+      if (wasOffline) {
+        await Future.delayed(const Duration(milliseconds: 1200));
+        if (!mounted) return;
+      }
+
       context.go(AppRoutes.home);
     }
   }
 
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup(
+        'one.one.one.one',
+      ).timeout(const Duration(seconds: 2));
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    } on TimeoutException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _enterOfflineMode() {
+    if (_isWaitingForInternet) return;
+    _isWaitingForInternet = true;
+
+    _showNoInternetSnackBar();
+
+    _internetRetryTimer?.cancel();
+    _internetRetryTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      _checkAuthAndNavigate();
+    });
+  }
+
+  void _exitOfflineMode() {
+    _internetRetryTimer?.cancel();
+    if (!_isWaitingForInternet) return;
+    _isWaitingForInternet = false;
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    }
+  }
+
+  void _showConnectedSnackBar() {
+    if (!mounted) return;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.zero,
+        dismissDirection: DismissDirection.down,
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF0D2818), const Color(0xFF1A3A2A)]
+                  : [const Color(0xFFECFDF5), const Color(0xFFD1FAE5)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF34D399).withValues(alpha: 0.3)
+                  : const Color(0xFF10B981).withValues(alpha: 0.25),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(
+                  0xFF10B981,
+                ).withValues(alpha: isDark ? 0.15 : 0.08),
+                blurRadius: 20,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Success icon container
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFF10B981,
+                  ).withValues(alpha: isDark ? 0.2 : 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.wifi_rounded,
+                    color: Color(0xFF10B981),
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Connected!',
+                      style: GoogleFonts.firaCode(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF065F46),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Loading your data...',
+                      style: GoogleFonts.firaCode(
+                        fontSize: 11,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : const Color(0xFF065F46).withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Loading indicator
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? const Color(0xFF34D399) : const Color(0xFF10B981),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showNoInternetSnackBar() {
+    if (!mounted) return;
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = AppColors.primary;
+
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(days: 1), // Persist until dismissed
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: EdgeInsets.zero,
+        dismissDirection: DismissDirection.none,
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [const Color(0xFF1A1A2E), const Color(0xFF16213E)]
+                  : [const Color(0xFFFFF0F0), const Color(0xFFFFE8E8)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark
+                  ? Colors.redAccent.withValues(alpha: 0.3)
+                  : Colors.redAccent.withValues(alpha: 0.2),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.redAccent.withValues(alpha: isDark ? 0.15 : 0.08),
+                blurRadius: 20,
+                spreadRadius: 0,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                blurRadius: 10,
+                spreadRadius: 0,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Animated wifi icon container
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.redAccent.withValues(alpha: isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.wifi_off_rounded,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Text content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'No internet connection',
+                      style: GoogleFonts.firaCode(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Waiting for connection...',
+                      style: GoogleFonts.firaCode(
+                        fontSize: 11,
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.5)
+                            : const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Retry button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _checkAuthAndNavigate,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          primaryColor,
+                          primaryColor.withValues(alpha: 0.85),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'Retry',
+                      style: GoogleFonts.firaCode(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
+    _internetRetryTimer?.cancel();
     _mainController.dispose();
     _bgController.dispose();
     super.dispose();
@@ -242,7 +579,6 @@ class _SplashScreenState extends State<SplashScreen>
         ? AppColors.darkBackground
         : AppColors.lightBackground;
     final primaryColor = AppColors.primary;
-    final textColor = isDark ? AppColors.darkText : AppColors.lightText;
     final secondaryTextColor = isDark
         ? AppColors.darkTextSecondary
         : AppColors.lightTextSecondary;
@@ -283,14 +619,14 @@ class _SplashScreenState extends State<SplashScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        _buildLetter('S', 0, primaryColor),
-                        _buildLetter('p', 1, textColor),
-                        _buildLetter('a', 2, textColor),
-                        _buildLetter('r', 3, textColor),
-                        _buildLetter('k', 4, primaryColor),
+                        _buildLetter('S', 0, Colors.white),
+                        _buildLetter('p', 1, Colors.white),
+                        _buildLetter('a', 2, Colors.white),
+                        _buildLetter('r', 3, Colors.white),
+                        _buildLetter('k', 4, Colors.white),
                         // const SizedBox(width: 16),
                         _buildLetter('B', 5, primaryColor),
-                        _buildLetter('i', 6, textColor),
+                        _buildLetter('i', 6, primaryColor),
                         _buildLetter('t', 7, primaryColor),
                       ],
                     ),

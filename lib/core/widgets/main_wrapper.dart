@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io' show InternetAddress, SocketException;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +10,7 @@ import '../constants/app_routes.dart';
 import '../resources/values_manager.dart';
 import '../utils/dialog_utils.dart';
 import 'app_update_listener.dart';
+import '../../features/app_config/presentation/providers/app_config_provider.dart';
 import '../../features/profile/presentation/providers/profile_provider.dart';
 import '../../features/notifications/presentation/providers/notifications_provider.dart';
 import '../../features/orders/presentation/providers/orders_provider.dart';
@@ -40,6 +43,16 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
   /// Flag to prevent didUpdateWidget from adding to history during back navigation
   bool _isGoingBack = false;
 
+  /// Track when app goes to background and throttle resume refreshes.
+  DateTime? _lastBackgroundAt;
+  DateTime? _lastResumeRefreshAt;
+  Timer? _networkRecoveryTimer;
+  Timer? _connectionBannerTimer;
+  bool _isRecoveryInProgress = false;
+  bool _awaitingNetworkRecovery = false;
+  bool _showConnectionBanner = false;
+  bool _isConnectionOffline = false;
+
   @override
   void initState() {
     super.initState();
@@ -47,13 +60,24 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
     _setupNotificationListeners();
     // Register the back press handler for the BackButtonDispatcher
     MainWrapper.handleBackPress = _onBackPressed;
+    unawaited(_checkInitialConnectivity());
   }
 
   @override
   void dispose() {
     MainWrapper.handleBackPress = null;
+    _networkRecoveryTimer?.cancel();
+    _connectionBannerTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  Future<void> _checkInitialConnectivity() async {
+    final hasInternet = await _hasInternetConnection();
+    if (!mounted || hasInternet) return;
+
+    _showOfflineBanner();
+    _startNetworkRecoveryRetries();
   }
 
   /// Detect tab changes from ANY source (nav bar, context.go(), etc.)
@@ -68,7 +92,9 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
       if (_isGoingBack) {
         // Back navigation — don't add to history (already handled by _onBackPressed)
         _isGoingBack = false;
-        debugPrint('📱 Tab back: $oldIndex → $newIndex | History: $_tabHistory');
+        debugPrint(
+          '📱 Tab back: $oldIndex → $newIndex | History: $_tabHistory',
+        );
       } else {
         // Forward navigation — track in history
         if (_tabHistory.isEmpty || _tabHistory.last != oldIndex) {
@@ -80,24 +106,181 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
           _tabHistory.removeAt(0);
         }
 
-        debugPrint('📱 Tab changed: $oldIndex → $newIndex | History: $_tabHistory');
+        debugPrint(
+          '📱 Tab changed: $oldIndex → $newIndex | History: $_tabHistory',
+        );
       }
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // ⚠️ Skipping auto-refresh on resume to avoid unnecessary API calls when
-    // picking files, switching apps briefly, etc.
-    /*
-    if (state == AppLifecycleState.resumed) {
-      // Refresh course progress data when user returns to the app
-      ref.read(myCoursesProvider.notifier).refreshData();
-      ref.read(coursesProvider.notifier).refreshData();
-      ref.invalidate(homeDataProvider);
-      ref.invalidate(homePopularCoursesProvider);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _lastBackgroundAt = DateTime.now();
+      return;
     }
-    */
+
+    if (state == AppLifecycleState.resumed) {
+      final now = DateTime.now();
+      final secondsAway = _lastBackgroundAt == null
+          ? 999
+          : now.difference(_lastBackgroundAt!).inSeconds;
+      final secondsSinceLastRefresh = _lastResumeRefreshAt == null
+          ? 999
+          : now.difference(_lastResumeRefreshAt!).inSeconds;
+
+      // Ignore very short transitions (e.g. picker/app switch <2s),
+      // and throttle frequent refreshes.
+      if (secondsAway < 2 && secondsSinceLastRefresh < 15) {
+        return;
+      }
+      if (secondsSinceLastRefresh < 6) {
+        return;
+      }
+
+      unawaited(_tryRecoverAfterResume());
+    }
+  }
+
+  Future<void> _tryRecoverAfterResume() async {
+    if (_isRecoveryInProgress) return;
+
+    _isRecoveryInProgress = true;
+    try {
+      final hasInternet = await _hasInternetConnection();
+
+      if (hasInternet) {
+        final wasRecovering = _awaitingNetworkRecovery || _isConnectionOffline;
+        _networkRecoveryTimer?.cancel();
+        _awaitingNetworkRecovery = false;
+        if (wasRecovering) {
+          _showOnlineBanner();
+        }
+        await _refreshCoreData();
+      } else {
+        _showOfflineBanner();
+        _startNetworkRecoveryRetries();
+      }
+    } finally {
+      _isRecoveryInProgress = false;
+    }
+  }
+
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup(
+        'one.one.one.one',
+      ).timeout(const Duration(seconds: 2));
+
+      return result.isNotEmpty && result.first.rawAddress.isNotEmpty;
+    } on SocketException {
+      return false;
+    } on TimeoutException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _startNetworkRecoveryRetries() {
+    if (_awaitingNetworkRecovery) return;
+
+    _awaitingNetworkRecovery = true;
+    _showOfflineBanner();
+    _networkRecoveryTimer?.cancel();
+
+    var attempts = 0;
+    _networkRecoveryTimer = Timer.periodic(const Duration(seconds: 4), (
+      timer,
+    ) async {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+
+      if (_isRecoveryInProgress) return;
+
+      attempts++;
+      _isRecoveryInProgress = true;
+      try {
+        final hasInternet = await _hasInternetConnection();
+        if (hasInternet) {
+          timer.cancel();
+          _awaitingNetworkRecovery = false;
+          await _refreshCoreData();
+          _showOnlineBanner();
+          return;
+        }
+
+        if (attempts >= 6) {
+          timer.cancel();
+          _awaitingNetworkRecovery = false;
+        }
+      } finally {
+        _isRecoveryInProgress = false;
+      }
+    });
+  }
+
+  Future<void> _refreshCoreData() async {
+    _lastResumeRefreshAt = DateTime.now();
+
+    ref.invalidate(appConfigProvider);
+    ref.invalidate(homeDataProvider);
+    ref.invalidate(homePopularCoursesProvider);
+    ref.invalidate(homeCategoriesProvider);
+    ref.invalidate(unreadNotificationsCountProvider);
+
+    // Trigger immediate fetches so the user sees fresh data quickly.
+    unawaited(_ignorePrefetchErrors(ref.read(appConfigProvider.future)));
+    unawaited(_ignorePrefetchErrors(ref.read(homeDataProvider.future)));
+    unawaited(
+      _ignorePrefetchErrors(ref.read(homePopularCoursesProvider.future)),
+    );
+    unawaited(_ignorePrefetchErrors(ref.read(homeCategoriesProvider.future)));
+    unawaited(
+      _ignorePrefetchErrors(ref.read(unreadNotificationsCountProvider.future)),
+    );
+
+    unawaited(ref.read(myCoursesProvider.notifier).refreshData());
+    unawaited(ref.read(coursesProvider.notifier).refreshData());
+  }
+
+  Future<void> _ignorePrefetchErrors<T>(Future<T> future) async {
+    try {
+      await future;
+    } catch (_) {
+      // Intentionally ignored: this is a best-effort warm-up request.
+    }
+  }
+
+  void _showOfflineBanner() {
+    if (!mounted) return;
+    if (_showConnectionBanner && _isConnectionOffline) return;
+
+    _connectionBannerTimer?.cancel();
+    setState(() {
+      _showConnectionBanner = true;
+      _isConnectionOffline = true;
+    });
+  }
+
+  void _showOnlineBanner() {
+    if (!mounted) return;
+
+    _connectionBannerTimer?.cancel();
+    setState(() {
+      _showConnectionBanner = true;
+      _isConnectionOffline = false;
+    });
+
+    _connectionBannerTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() {
+        _showConnectionBanner = false;
+      });
+    });
   }
 
   void _setupNotificationListeners() {
@@ -272,14 +455,89 @@ class _MainWrapperState extends ConsumerState<MainWrapper>
     final isGuest = profile?.id == -1;
 
     return AppUpdateListener(
-      child: Scaffold(
-        extendBody: true,
-        body: widget.navigationShell,
-        bottomNavigationBar: _CustomBottomNavBar(
-          currentIndex: widget.navigationShell.currentIndex,
-          onTap: (index) => _onTap(context, index),
-          isGuest: isGuest,
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Scaffold(
+            extendBody: true,
+            body: widget.navigationShell,
+            bottomNavigationBar: _CustomBottomNavBar(
+              currentIndex: widget.navigationShell.currentIndex,
+              onTap: (index) => _onTap(context, index),
+              isGuest: isGuest,
+            ),
+          ),
+          IgnorePointer(
+            child: SafeArea(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppPadding.p16,
+                    AppPadding.p8,
+                    AppPadding.p16,
+                    0,
+                  ),
+                  child: AnimatedSlide(
+                    offset: _showConnectionBanner
+                        ? Offset.zero
+                        : const Offset(0, -1),
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedOpacity(
+                      opacity: _showConnectionBanner ? 1 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppPadding.p14,
+                          vertical: AppPadding.p10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _isConnectionOffline
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(AppRadius.r12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.15),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _isConnectionOffline
+                                  ? Icons.wifi_off_rounded
+                                  : Icons.wifi_rounded,
+                              color: Colors.white,
+                              size: AppSize.s20,
+                            ),
+                            const SizedBox(width: AppSize.s8),
+                            Expanded(
+                              child: Text(
+                                _isConnectionOffline
+                                    ? 'No internet connection'
+                                    : 'Back online',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -314,7 +572,7 @@ class _CustomBottomNavBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.r40),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               blurRadius:
                   25, // No specialized constant for shadowBlur25 in AppRadius, kept raw or added to AppSize? I added AppSize.s25 in values_manager
               offset: const Offset(0, 10), // AppSize.s10
@@ -333,10 +591,12 @@ class _CustomBottomNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Theme.of(
                   context,
-                ).colorScheme.surfaceContainer.withOpacity(0.95),
+                ).colorScheme.surfaceContainer.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(AppRadius.r40),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.2),
                 ),
               ),
               child: Row(
@@ -400,7 +660,7 @@ class _NavBarItem extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isActive
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.r24),
         ),
@@ -410,7 +670,9 @@ class _NavBarItem extends StatelessWidget {
               icon,
               color: isActive
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
               size: AppSize.s20,
             ),
             if (isActive) ...[

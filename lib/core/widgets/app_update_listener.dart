@@ -13,7 +13,8 @@ class AppUpdateListener extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // الاستماع لحالة التحديث الإجباري
     ref.listen(updateRequiredProvider, (previous, next) {
-      // استخدام next.value بدلاً من whenData لضمان الاستجابة الصحيحة
+      // Skip error/loading states (e.g. no internet) — don't crash
+      if (next.hasError || !next.hasValue) return;
       if (next.value == true) {
         _showUpdateDialog(context, ref);
       }
